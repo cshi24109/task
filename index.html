@@ -72,9 +72,12 @@
                     </div>
                 </div>
 
-                <div class="btn-group">
-                    <button type="button" id="btn-cancel">キャンセル</button>
-                    <button type="submit" id="btn-save">保存する</button>
+                <div class="btn-group-container">
+                    <button type="button" id="btn-delete" class="btn-danger" style="display: none;">削除</button>
+                    <div class="btn-sub-group">
+                        <button type="button" id="btn-cancel">閉じる</button>
+                        <button type="submit" id="btn-save">保存</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -91,9 +94,8 @@
         const categories = ['必修', '専門', '教養'];
         const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'general' };
         
-        let activeTargetKey = null; // 現在編集中の「曜日-時限」を記憶する変数
+        let activeTargetKey = null;
 
-        // 画面に時間割データを描画する関数
         function renderTimetable() {
             document.querySelectorAll('td[data-day]').forEach(td => {
                 const day = td.getAttribute('data-day');
@@ -123,7 +125,6 @@
             });
         }
 
-        // 欠席回数を増減させる関数
         window.changeAbsence = function(key, amount) {
             if (timetableData[key]) {
                 timetableData[key].absence = Math.max(0, timetableData[key].absence + amount);
@@ -131,27 +132,31 @@
             }
         };
 
-        // ポップアップを開く関数
+        // ポップアップを開く処理
         window.openModal = function(day, period) {
             activeTargetKey = `${day}-${period}`;
             document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
             
             const existing = timetableData[activeTargetKey];
+            const deleteBtn = document.getElementById('btn-delete');
+
             if (existing) {
                 document.getElementById('course-name-input').value = existing.name;
                 const catIndex = categories.indexOf(existing.category);
                 document.getElementById('category-slider').value = catIndex;
                 updateSliderLabel(catIndex);
+                deleteBtn.style.display = 'block'; // 既に登録がある時だけ削除ボタンを表示
             } else {
                 document.getElementById('course-name-input').value = '';
                 document.getElementById('category-slider').value = 0;
                 updateSliderLabel(0);
+                deleteBtn.style.display = 'none';  // 新規追加の時は削除ボタンを隠す
             }
             
             document.getElementById('modal').style.display = 'flex';
         };
 
-        // シークバーの動きに合わせてラベルと色を変える処理
+        // シークバー連動
         const slider = document.getElementById('category-slider');
         const labelSpan = document.getElementById('category-val');
         
@@ -165,13 +170,22 @@
             updateSliderLabel(e.target.value);
         });
 
-        // キャンセルボタン
+        // 閉じるボタン
         document.getElementById('btn-cancel').addEventListener('click', () => {
-            document.getElementById('modal').style.style.display = 'none';
             document.getElementById('modal').style.display = 'none';
         });
 
-        // 保存ボタン（フォーム送信）
+        // 取り消し（削除）ボタンの処理
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            if (activeTargetKey && timetableData[activeTargetKey]) {
+                // データを完全に消去（取り消し）
+                delete timetableData[activeTargetKey];
+                document.getElementById('modal').style.display = 'none';
+                renderTimetable(); // 画面を再描画
+            }
+        });
+
+        // 保存ボタン
         document.getElementById('course-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('course-name-input').value.trim();
@@ -180,7 +194,6 @@
 
             if (!name) return;
 
-            // 既存の欠席回数を引き継ぐか、新規なら0にする
             const currentAbsence = timetableData[activeTargetKey] ? timetableData[activeTargetKey].absence : 0;
 
             timetableData[activeTargetKey] = {
@@ -193,7 +206,6 @@
             renderTimetable();
         });
 
-        // 最初にアプリを開いたときに時間割を組み立てる
         renderTimetable();
     </script>
 </body>
