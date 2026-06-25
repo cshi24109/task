@@ -29,60 +29,172 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr data-period="1">
                     <td class="time-col">1</td>
-                    <td>
-                        <div class="course-card required">
-                            <div>
-                                <span class="category-badge">必修</span>
-                                <div class="course-name">応用数学</div>
-                            </div>
-                            <div class="absence-zone">
-                                <span>欠席: <b>2</b>回</span>
-                                <div class="btn-zone"><button>-</button> <button>+</button></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td></td><td></td><td></td><td></td>
+                    <td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td>
                 </tr>
-                <tr>
+                <tr data-period="2">
                     <td class="time-col">2</td>
-                    <td></td><td></td><td></td><td></td>
-                    <td>
-                        <div class="course-card general">
-                            <div>
-                                <span class="category-badge">教養</span>
-                                <div class="course-name">日本国憲法</div>
-                            </div>
-                            <div class="absence-zone">
-                                <span>欠席: <b>0</b>回</span>
-                                <div class="btn-zone"><button>-</button> <button>+</button></div>
-                            </div>
-                        </div>
-                    </td>
+                    <td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td>
                 </tr>
-                <tr>
+                <tr data-period="3">
                     <td class="time-col">3</td>
-                    <td></td><td></td>
-                    <td>
-                        <div class="course-card major">
-                            <div>
-                                <span class="category-badge">専門</span>
-                                <div class="course-name">実験</div>
-                            </div>
-                            <div class="absence-zone">
-                                <span>欠席: <b>2</b>回</span>
-                                <div class="btn-zone"><button>-</button> <button>+</button></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td></td><td></td>
+                    <td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td>
                 </tr>
-                <tr><td class="time-col">4</td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="time-col">5</td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr data-period="4">
+                    <td class="time-col">4</td>
+                    <td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td>
+                </tr>
+                <tr data-period="5">
+                    <td class="time-col">5</td>
+                    <td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td>
+                </tr>
             </tbody>
         </table>
     </main>
 
+    <div id="modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 id="modal-title">授業を設定</h3>
+            <form id="course-form">
+                <div class="form-group">
+                    <label>科目名</label>
+                    <input type="text" id="course-name-input" placeholder="例: 経済学基礎" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>科目区分: <span id="category-val" class="badge required">必修</span></label>
+                    <input type="range" id="category-slider" min="0" max="2" value="0" step="1">
+                    <div class="slider-labels">
+                        <span>必修</span>
+                        <span>専門</span>
+                        <span>教養</span>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" id="btn-cancel">キャンセル</button>
+                    <button type="submit" id="btn-save">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 初期のダミーデータ
+        let timetableData = {
+            '月-1': { name: '英語A', category: '必修', absence: 1 },
+            '水-3': { name: 'データ構造論', category: '専門', absence: 2 },
+            '金-2': { name: '心理学基礎', category: '教養', absence: 0 }
+        };
+
+        const categories = ['必修', '専門', '教養'];
+        const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'general' };
+        
+        let activeTargetKey = null; // 現在編集中の「曜日-時限」を記憶する変数
+
+        // 画面に時間割データを描画する関数
+        function renderTimetable() {
+            document.querySelectorAll('td[data-day]').forEach(td => {
+                const day = td.getAttribute('data-day');
+                const period = td.parentElement.getAttribute('data-period');
+                const key = `${day}-${period}`;
+                const course = timetableData[key];
+
+                if (course) {
+                    td.innerHTML = `
+                        <div class="course-card ${categoryClasses[course.category]}">
+                            <div onclick="openModal('${day}', ${period})">
+                                <span class="category-badge">${course.category}</span>
+                                <div class="course-name">${course.name}</div>
+                            </div>
+                            <div class="absence-zone">
+                                <span>欠席: <b>${course.absence}</b>回</span>
+                                <div class="btn-zone">
+                                    <button onclick="changeAbsence('${key}', -1)">-</button>
+                                    <button onclick="changeAbsence('${key}', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    td.innerHTML = `<button class="btn-add" onclick="openModal('${day}', ${period})">+ 追加</button>`;
+                }
+            });
+        }
+
+        // 欠席回数を増減させる関数
+        window.changeAbsence = function(key, amount) {
+            if (timetableData[key]) {
+                timetableData[key].absence = Math.max(0, timetableData[key].absence + amount);
+                renderTimetable();
+            }
+        };
+
+        // ポップアップを開く関数
+        window.openModal = function(day, period) {
+            activeTargetKey = `${day}-${period}`;
+            document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
+            
+            const existing = timetableData[activeTargetKey];
+            if (existing) {
+                document.getElementById('course-name-input').value = existing.name;
+                const catIndex = categories.indexOf(existing.category);
+                document.getElementById('category-slider').value = catIndex;
+                updateSliderLabel(catIndex);
+            } else {
+                document.getElementById('course-name-input').value = '';
+                document.getElementById('category-slider').value = 0;
+                updateSliderLabel(0);
+            }
+            
+            document.getElementById('modal').style.display = 'flex';
+        };
+
+        // シークバーの動きに合わせてラベルと色を変える処理
+        const slider = document.getElementById('category-slider');
+        const labelSpan = document.getElementById('category-val');
+        
+        function updateSliderLabel(value) {
+            const cat = categories[value];
+            labelSpan.innerText = cat;
+            labelSpan.className = `badge ${categoryClasses[cat]}`;
+        }
+
+        slider.addEventListener('input', (e) => {
+            updateSliderLabel(e.target.value);
+        });
+
+        // キャンセルボタン
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            document.getElementById('modal').style.style.display = 'none';
+            document.getElementById('modal').style.display = 'none';
+        });
+
+        // 保存ボタン（フォーム送信）
+        document.getElementById('course-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('course-name-input').value.trim();
+            const catIndex = document.getElementById('category-slider').value;
+            const category = categories[catIndex];
+
+            if (!name) return;
+
+            // 既存の欠席回数を引き継ぐか、新規なら0にする
+            const currentAbsence = timetableData[activeTargetKey] ? timetableData[activeTargetKey].absence : 0;
+
+            timetableData[activeTargetKey] = {
+                name: name,
+                category: category,
+                absence: currentAbsence
+            };
+
+            document.getElementById('modal').style.display = 'none';
+            renderTimetable();
+        });
+
+        // 最初にアプリを開いたときに時間割を組み立てる
+        renderTimetable();
+    </script>
 </body>
 </html>
