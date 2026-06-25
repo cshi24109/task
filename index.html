@@ -12,13 +12,14 @@ interface Course {
 
 // 曜日と時限の定義
 const DAYS = ['月', '火', '水', '木', '金'] as const;
+// 時限数を6までに固定（画面からはみ出さないように）
 const PERIODS = [1, 2, 3, 4, 5, 6] as const;
 
 export default function TimetablePage() {
   // 現在の学期管理（モック）
   const [semester, setSemester] = useState('2026年度 前期');
   
-  // 時間割データ（キーは "曜日-時限" 例: "月-1"）
+  // 時間割データ（キーは "曜日-時限"）
   const [timetable, setTimetable] = useState<Record<string, Course>>({
     '月-1': { id: '1', name: '英語A', category: '必修', absenceCount: 1 },
     '水-3': { id: '2', name: 'データ構造論', category: '専門', absenceCount: 2 },
@@ -73,74 +74,75 @@ export default function TimetablePage() {
     });
   };
 
-  // 科目区分に応じた背景色の決定
+  // 科目区分に応じた背景色・テキスト色の決定
   const getCategoryClass = (category: '必修' | '専門' | '教養') => {
     switch (category) {
-      case '必修': return 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100';
-      case '専門': return 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100';
-      case '教養': return 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100';
+      case '必修': return 'bg-red-50 border-red-200 text-red-900 hover:bg-red-100';
+      case '専門': return 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-blue-100';
+      case '教養': return 'bg-green-50 border-green-200 text-green-900 hover:bg-green-100';
       default: return 'bg-white';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 text-gray-800">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* ヘッダー・学期切り替え */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">出席管理アプリ</h1>
-          <select 
-            value={semester} 
-            onChange={(e) => setSemester(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-1.5 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option>2026年度 前期</option>
-            <option>2026年度 後期</option>
-            <option>2025年度 後期（過去）</option>
-          </select>
-        </div>
+    // 画面全体を固定（縦スクロールさせない）
+    <div className="h-screen bg-gray-50 text-gray-800 flex flex-col font-sans antialiased overflow-hidden">
+      
+      {/* ヘッダー */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center z-10 shadow-sm">
+        <h1 className="text-xl font-bold text-gray-900 tracking-tight">出席管理アプリ</h1>
+        <select 
+          value={semester} 
+          onChange={(e) => setSemester(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-1.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+        >
+          <option>2026年度 前期</option>
+          <option>2026年度 後期</option>
+          <option>2025年度 後期（過去）</option>
+        </select>
+      </header>
 
-        {/* 時間割表（レスポンシブ対応のため横スクロール可能に） */}
-        <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-          <table className="w-full min-w-[600px] table-fixed border-collapse">
+      {/* 時間割エリア（ここをスクロール可能に） */}
+      <main className="flex-1 overflow-x-auto overflow-y-hidden p-2 md:p-4">
+        <div className="bg-white rounded-lg shadow-inner border border-gray-100 h-full">
+          <table className="w-full h-full table-fixed border-collapse min-w-[700px]">
             <thead>
-              <tr className="bg-gray-100 border-b border-gray-200">
-                <th className="w-16 p-3 text-center text-sm font-semibold text-gray-600">時限</th>
+              <tr className="bg-gray-100 sticky top-0 z-10 border-b border-gray-200">
+                <th className="w-16 p-2 text-center text-xs font-semibold text-gray-500 sticky left-0 bg-gray-100 z-20">時限</th>
                 {DAYS.map(day => (
-                  <th key={day} className="p-3 text-center text-sm font-semibold text-gray-600">{day}曜日</th>
+                  <th key={day} className="p-2 text-center text-xs font-semibold text-gray-500 border-l border-gray-200">{day}曜日</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {PERIODS.map(period => (
-                <tr key={period} className="border-b border-gray-200">
-                  <td className="p-4 text-center font-bold bg-gray-50 text-gray-500 text-sm">{period}限</td>
+                <tr key={period} className="border-b border-gray-100 last:border-b-0">
+                  <td className="p-2 text-center font-bold bg-gray-50 text-gray-500 text-sm sticky left-0 z-10 border-r border-gray-200">{period}</td>
                   {DAYS.map(day => {
                     const slotKey = `${day}-${period}`;
                     const course = timetable[slotKey];
 
                     return (
-                      <td key={day} className="p-1 border-r border-gray-100 h-28 vertical-top">
+                      <td key={day} className="p-1 h-20 vertical-top border-r border-gray-100 last:border-r-0">
                         {course ? (
-                          <div className={`h-full p-2 rounded border flex flex-col justify-between transition-colors ${getCategoryClass(course.category)}`}>
-                            <div>
-                              <div className="text-xs font-semibold opacity-75">{course.category}</div>
+                          <div className={`h-full p-2 rounded-md border flex flex-col justify-between transition-colors ${getCategoryClass(course.category)}`}>
+                            <div className="flex-1">
+                              <div className="text-[10px] font-bold opacity-60 tracking-wide uppercase">{course.category}</div>
                               <div className="font-bold text-sm leading-tight mt-0.5 line-clamp-2">{course.name}</div>
                             </div>
-                            <div className="flex items-center justify-between mt-2 pt-1 border-t border-current border-opacity-10">
-                              <span className="text-xs font-medium">欠席: <strong className="text-sm">{course.absenceCount}</strong>回</span>
-                              <div className="flex gap-1">
-                                <button onClick={(e) => { e.stopPropagation(); handleAbsenceChange(slotKey, -1); }} className="w-5 h-5 flex items-center justify-center rounded bg-white bg-opacity-60 hover:bg-opacity-90 font-bold text-xs shadow-sm">-</button>
-                                <button onClick={(e) => { e.stopPropagation(); handleAbsenceChange(slotKey, 1); }} className="w-5 h-5 flex items-center justify-center rounded bg-white bg-opacity-60 hover:bg-opacity-90 font-bold text-xs shadow-sm">+</button>
+                            <div className="flex items-end justify-between mt-1 pt-1 border-t border-current border-opacity-10">
+                              <span className="text-[10px] font-medium">欠席: <strong className="text-sm font-extrabold">{course.absenceCount}</strong> 回</span>
+                              <div className="flex gap-0.5">
+                                <button onClick={(e) => { e.stopPropagation(); handleAbsenceChange(slotKey, -1); }} className="w-5 h-5 flex items-center justify-center rounded bg-white bg-opacity-70 hover:bg-opacity-100 font-bold text-xs shadow-sm">-</button>
+                                <button onClick={(e) => { e.stopPropagation(); handleAbsenceChange(slotKey, 1); }} className="w-5 h-5 flex items-center justify-center rounded bg-white bg-opacity-70 hover:bg-opacity-100 font-bold text-xs shadow-sm">+</button>
                               </div>
                             </div>
-                            <button onClick={() => handleSlotClick(day, period)} className="text-[10px] text-right underline opacity-50 hover:opacity-100 mt-1">編集</button>
+                            <button onClick={() => handleSlotClick(day, period)} className="text-[9px] text-right underline opacity-40 hover:opacity-100 mt-1">編集</button>
                           </div>
                         ) : (
                           <button 
                             onClick={() => handleSlotClick(day, period)}
-                            className="w-full h-full border border-dashed border-gray-200 rounded hover:border-blue-400 hover:bg-blue-50 hover:bg-opacity-30 transition-all flex items-center justify-center text-gray-300 hover:text-blue-500 text-xs font-medium"
+                            className="w-full h-full border border-dashed border-gray-200 rounded-md hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center justify-center text-gray-300 hover:text-blue-500 text-xs font-medium"
                           >
                             + 追加
                           </button>
@@ -153,60 +155,71 @@ export default function TimetablePage() {
             </tbody>
           </table>
         </div>
+      </main>
 
-        {/* 入力・編集用モーダル（ポップアップ） */}
-        {selectedSlot && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-bold mb-4 text-gray-900">{selectedSlot.replace('-', '曜日 ')}限の授業設定</h3>
-              <form onSubmit={handleSaveCourse} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">科目名</label>
-                  <input 
-                    type="text" 
-                    value={inputName}
-                    onChange={(e) => setInputName(e.target.value)}
-                    placeholder="例: 経済学基礎"
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    required
-                  />
+      {/* 入力・編集用モーダル */}
+      {selectedSlot && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm border border-gray-100">
+            <h3 className="text-lg font-extrabold mb-5 text-gray-950 tracking-tight">{selectedSlot.replace('-', '曜日 ')}限の授業</h3>
+            <form onSubmit={handleSaveCourse} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5">科目名</label>
+                <input 
+                  type="text" 
+                  value={inputName}
+                  onChange={(e) => setInputName(e.target.value)}
+                  placeholder="例: 経済学基礎"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm shadow-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5">科目区分</label>
+                <div className="flex gap-2.5">
+                  {(['必修', '専門', '教養'] as const).map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setInputCategory(cat)}
+                      className={`flex-1 py-2.5 text-xs font-extrabold rounded-lg border transition-all ${inputCategory === cat ? 'bg-gray-950 text-white border-gray-950 shadow' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">科目区分</label>
-                  <div className="flex gap-2">
-                    {(['必修', '専門', '教養'] as const).map(cat => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setInputCategory(cat)}
-                        className={`flex-1 py-2 text-xs font-bold rounded border transition-all ${inputCategory === cat ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button 
-                    type="button" 
-                    onClick={() => setSelectedSlot(null)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 rounded text-sm"
-                  >
-                    キャンセル
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedSlot(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-lg text-sm transition-colors"
+                >
+                  キャンセル
                   </button>
-                  <button 
-                    type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-sm shadow-sm"
-                  >
-                    保存する
-                  </button>
-                </div>
-              </form>
-            </div>
+                <button 
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition-colors"
+                >
+                  保存
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-      </div>
+      {/* 単純なフェードインアニメーションのCSS */}
+      <style jsx global>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+      `}</style>
+
     </div>
   );
 }
