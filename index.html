@@ -84,129 +84,139 @@
     </div>
 
     <script>
-        // 初期のダミーデータ
-        let timetableData = {
-            '月-1': { name: '英語A', category: '必修', absence: 1 },
-            '水-3': { name: 'データ構造論', category: '専門', absence: 2 },
-            '金-2': { name: '心理学基礎', category: '教養', absence: 0 }
-        };
+        // ★scriptタグの中身をこのコードに丸ごと差し替えてください
+let timetableData = {
+    '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0 },
+    '水-3': { name: 'データ構造論', category: '専門', absence: 2, lateness: 1 },
+    '金-2': { name: '心理学基礎', category: '教養', absence: 0, lateness: 2 }
+};
 
-        const categories = ['必修', '専門', '教養'];
-        const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'general' };
-        
-        let activeTargetKey = null;
+const categories = ['必修', '専門', '教養'];
+const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'general' };
 
-        function renderTimetable() {
-            document.querySelectorAll('td[data-day]').forEach(td => {
-                const day = td.getAttribute('data-day');
-                const period = td.parentElement.getAttribute('data-period');
-                const key = `${day}-${period}`;
-                const course = timetableData[key];
+let activeTargetKey = null;
 
-                if (course) {
-                    td.innerHTML = `
-                        <div class="course-card ${categoryClasses[course.category]}">
-                            <div onclick="openModal('${day}', ${period})">
-                                <span class="category-badge">${course.category}</span>
-                                <div class="course-name">${course.name}</div>
-                            </div>
-                            <div class="absence-zone">
-                                <span>欠席: <b>${course.absence}</b>回</span>
-                                <div class="btn-zone">
-                                    <button onclick="changeAbsence('${key}', -1)">-</button>
-                                    <button onclick="changeAbsence('${key}', 1)">+</button>
-                                </div>
+function renderTimetable() {
+    document.querySelectorAll('td[data-day]').forEach(td => {
+        const day = td.getAttribute('data-day');
+        const period = td.parentElement.getAttribute('data-period');
+        const key = `${day}-${period}`;
+        const course = timetableData[key];
+
+        if (course) {
+            // 遅刻（lateness）がない古いデータのための対策
+            if (course.lateness === undefined) course.lateness = 0;
+
+            td.innerHTML = `
+                <div class="course-card ${categoryClasses[course.category]}">
+                    <div onclick="openModal('${day}', ${period})">
+                        <span class="category-badge">${course.category}</span>
+                        <div class="course-name">${course.name}</div>
+                    </div>
+                    <div class="absence-zone" style="flex-direction: column; align-items: stretch; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>欠席: <b>${course.absence}</b>回</span>
+                            <div class="btn-zone">
+                                <button onclick="changeCount('${key}', 'absence', -1)">-</button>
+                                <button onclick="changeCount('${key}', 'absence', 1)">+</button>
                             </div>
                         </div>
-                    `;
-                } else {
-                    td.innerHTML = `<button class="btn-add" onclick="openModal('${day}', ${period})">+ 追加</button>`;
-                }
-            });
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>遅刻: <b>${course.lateness}</b>回</span>
+                            <div class="btn-zone">
+                                <button onclick="changeCount('${key}', 'lateness', -1)">-</button>
+                                <button onclick="changeCount('${key}', 'lateness', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            td.innerHTML = `<button class="btn-add" onclick="openModal('${day}', ${period})">+ 追加</button>`;
         }
+    });
+}
 
-        window.changeAbsence = function(key, amount) {
-            if (timetableData[key]) {
-                timetableData[key].absence = Math.max(0, timetableData[key].absence + amount);
-                renderTimetable();
-            }
-        };
-
-        // ポップアップを開く処理
-        window.openModal = function(day, period) {
-            activeTargetKey = `${day}-${period}`;
-            document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
-            
-            const existing = timetableData[activeTargetKey];
-            const deleteBtn = document.getElementById('btn-delete');
-
-            if (existing) {
-                document.getElementById('course-name-input').value = existing.name;
-                const catIndex = categories.indexOf(existing.category);
-                document.getElementById('category-slider').value = catIndex;
-                updateSliderLabel(catIndex);
-                deleteBtn.style.display = 'block'; // 既に登録がある時だけ削除ボタンを表示
-            } else {
-                document.getElementById('course-name-input').value = '';
-                document.getElementById('category-slider').value = 0;
-                updateSliderLabel(0);
-                deleteBtn.style.display = 'none';  // 新規追加の時は削除ボタンを隠す
-            }
-            
-            document.getElementById('modal').style.display = 'flex';
-        };
-
-        // シークバー連動
-        const slider = document.getElementById('category-slider');
-        const labelSpan = document.getElementById('category-val');
-        
-        function updateSliderLabel(value) {
-            const cat = categories[value];
-            labelSpan.innerText = cat;
-            labelSpan.className = `badge ${categoryClasses[cat]}`;
-        }
-
-        slider.addEventListener('input', (e) => {
-            updateSliderLabel(e.target.value);
-        });
-
-        // 閉じるボタン
-        document.getElementById('btn-cancel').addEventListener('click', () => {
-            document.getElementById('modal').style.display = 'none';
-        });
-
-        // 取り消し（削除）ボタンの処理
-        document.getElementById('btn-delete').addEventListener('click', () => {
-            if (activeTargetKey && timetableData[activeTargetKey]) {
-                // データを完全に消去（取り消し）
-                delete timetableData[activeTargetKey];
-                document.getElementById('modal').style.display = 'none';
-                renderTimetable(); // 画面を再描画
-            }
-        });
-
-        // 保存ボタン
-        document.getElementById('course-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('course-name-input').value.trim();
-            const catIndex = document.getElementById('category-slider').value;
-            const category = categories[catIndex];
-
-            if (!name) return;
-
-            const currentAbsence = timetableData[activeTargetKey] ? timetableData[activeTargetKey].absence : 0;
-
-            timetableData[activeTargetKey] = {
-                name: name,
-                category: category,
-                absence: currentAbsence
-            };
-
-            document.getElementById('modal').style.display = 'none';
-            renderTimetable();
-        });
-
+// 欠席・遅刻の両方のカウントを増減できるように修正した関数
+window.changeCount = function(key, type, amount) {
+    if (timetableData[key]) {
+        timetableData[key][type] = Math.max(0, (timetableData[key][type] || 0) + amount);
         renderTimetable();
+    }
+};
+
+window.openModal = function(day, period) {
+    activeTargetKey = `${day}-${period}`;
+    document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
+    
+    const existing = timetableData[activeTargetKey];
+    const deleteBtn = document.getElementById('btn-delete');
+
+    if (existing) {
+        document.getElementById('course-name-input').value = existing.name;
+        const catIndex = categories.indexOf(existing.category);
+        document.getElementById('category-slider').value = catIndex;
+        updateSliderLabel(catIndex);
+        deleteBtn.style.display = 'block';
+    } else {
+        document.getElementById('course-name-input').value = '';
+        document.getElementById('category-slider').value = 0;
+        updateSliderLabel(0);
+        deleteBtn.style.display = 'none';
+    }
+    
+    document.getElementById('modal').style.display = 'flex';
+};
+
+const slider = document.getElementById('category-slider');
+const labelSpan = document.getElementById('category-val');
+
+function updateSliderLabel(value) {
+    const cat = categories[value];
+    labelSpan.innerText = cat;
+    labelSpan.className = `badge ${categoryClasses[cat]}`;
+}
+
+slider.addEventListener('input', (e) => {
+    updateSliderLabel(e.target.value);
+});
+
+document.getElementById('btn-cancel').addEventListener('click', () => {
+    document.getElementById('modal').style.display = 'none';
+});
+
+document.getElementById('btn-delete').addEventListener('click', () => {
+    if (activeTargetKey && timetableData[activeTargetKey]) {
+        delete timetableData[activeTargetKey];
+        document.getElementById('modal').style.display = 'none';
+        renderTimetable();
+    }
+});
+
+document.getElementById('course-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('course-name-input').value.trim();
+    const catIndex = document.getElementById('category-slider').value;
+    const category = categories[catIndex];
+
+    if (!name) return;
+
+    // 既存のデータを引き継ぎ、新規なら0で初期化
+    const currentAbsence = timetableData[activeTargetKey] ? timetableData[activeTargetKey].absence : 0;
+    const currentLateness = timetableData[activeTargetKey] ? (timetableData[activeTargetKey].lateness || 0) : 0;
+
+    timetableData[activeTargetKey] = {
+        name: name,
+        category: category,
+        absence: currentAbsence,
+        lateness: currentLateness
+    };
+
+    document.getElementById('modal').style.display = 'none';
+    renderTimetable();
+});
+
+renderTimetable();
     </script>
 </body>
 </html>
