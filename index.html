@@ -121,7 +121,6 @@
 let timetableData = {
     '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
 };
-// サンプルデータにメモを追加
 let tasksData = {
     '2026-7-15': [
         { text: '経済レポート', type: 'task', memo: 'A4用紙3枚、ポータルからPDF提出' },
@@ -195,7 +194,6 @@ window.openTaskModal = function(y, m, d) {
     document.getElementById('task-modal').style.display = 'flex';
 };
 
-// 予定一覧のレンダリング（メモの表示に対応）
 function renderTaskList() {
     const tasks = tasksData[activeTaskDate] || [];
     const container = document.getElementById('existing-tasks');
@@ -221,7 +219,6 @@ function renderTaskList() {
     }
 }
 
-// 予定の追加処理（メモの取得・クリアに対応）
 window.handleAddTask = function(type) {
     const input = document.getElementById(`task-input-${type}`);
     const memoInput = document.getElementById(`task-memo-${type}`);
@@ -233,7 +230,7 @@ window.handleAddTask = function(type) {
     tasksData[activeTaskDate].push({ text: value, type: type, memo: memoValue });
     
     input.value = '';
-    if (memoInput) memoInput.value = ''; // メモの入力欄をクリア
+    if (memoInput) memoInput.value = '';
     renderTaskList();
     renderCalendar();
 };
@@ -261,18 +258,26 @@ document.getElementById('category-slider').addEventListener('input', (e) => {
     updateSliderLabel(e.target.value);
 });
 
+// 時間割の描画（マスのなかに教室・メモを表示するよう修正）
 function renderTimetable() {
     document.querySelectorAll('td[data-day]').forEach(td => {
         const day = td.getAttribute('data-day'), period = td.parentElement.getAttribute('data-period'), key = `${day}-${period}`, course = timetableData[key];
         if (course) {
             const totalAbs = course.absence + (course.lateness / 3), rem = Math.max(0, 5 - totalAbs);
             const remText = Number(rem.toFixed(2)), isDanger = rem <= 1;
-            const alertMsg = rem <= 0 ? "残り欠席回数0でもって単位を落としますかな" : `あと "${remText}" 回欠席できます`;
+            const alertMsg = rem < 0 ? "落単乙" : rem = 0 ? "絶対に学校に行け！！" : `あと "${remText}" 回欠席できます`;
+            
+            // ★教室（memo）があれば、授業名の下に薄い背景付きで表示する仕組みを追加
+            const memoHtml = course.memo 
+                ? `<div class="course-room" style="font-size: 10px; color: #4b5563; background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 4px; font-weight: 500; word-break: break-all;">🚪 ${course.memo}</div>` 
+                : '';
+
             td.innerHTML = `
                 <div class="course-card ${categoryClasses[course.category]}">
                     <div onclick="openModal('${day}', ${period})">
                         <span class="category-badge">${course.category}</span>
                         <div class="course-name">${course.name}</div>
+                        ${memoHtml}
                     </div>
                     <div class="absence-zone" style="flex-direction: column; align-items: stretch; gap: 4px;">
                         <div style="display: flex; justify-content: space-between;"><span>欠席: <b>${course.absence}</b>回</span>
