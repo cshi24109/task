@@ -72,30 +72,52 @@
 
     <div id="task-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <h3 id="task-modal-title">課題を管理</h3>
-            <div id="existing-tasks" style="margin-bottom: 15px;"></div>
-            <form id="task-form" style="border-top: 1px solid #eee; padding-top: 15px;">
+            <h3 id="task-modal-title">予定を管理</h3>
+            <div id="existing-tasks" style="margin-bottom: 15px; max-height: 160px; overflow-y: auto;"></div>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 15px;">
                 <div class="form-group">
-                    <label>新しい課題を追加</label>
-                    <input type="text" id="task-input" placeholder="例: レポート提出" required>
-                </div>
-                <div class="btn-group-container">
-                    <div class="btn-sub-group">
-                        <button type="button" onclick="closeModal('task-modal')">閉じる</button>
-                        <button type="submit" id="btn-save-task">追加する</button>
+                    <label style="color: #1e40af;">📝 課題を追加</label>
+                    <div class="task-input-group">
+                        <input type="text" id="task-input-task" placeholder="例: レポート提出">
+                        <button type="button" class="btn-add-task" onclick="handleAddTask('task')">追加</button>
                     </div>
                 </div>
-            </form>
+                <div class="form-group">
+                    <label style="color: #991b1b;">⚠️ テストを追加</label>
+                    <div class="task-input-group">
+                        <input type="text" id="task-input-test" placeholder="例: 中間試験">
+                        <button type="button" class="btn-add-test" onclick="handleAddTask('test')">追加</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="color: #4b5563;">📌 その他を追加</label>
+                    <div class="task-input-group">
+                        <input type="text" id="task-input-other" placeholder="例: ガイダンス、補講">
+                        <button type="button" class="btn-add-other" onclick="handleAddTask('other')">追加</button>
+                    </div>
+                </div>
+                
+                <div class="btn-group-container" style="margin-top: 15px;">
+                    <div class="btn-sub-group">
+                        <button type="button" onclick="closeModal('task-modal')">閉じる</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // データ
+        // データ構造の変更（テキストとタイプをセットで持つ形式）
         let timetableData = {
             '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
         };
         let tasksData = {
-            '2026-7-15': ['経済レポート', '心理学小テスト']
+            '2026-7-15': [
+                { text: '経済レポート', type: 'task' },
+                { text: '数学中間テスト', type: 'test' },
+                { text: 'サークル部費回収', type: 'other' }
+            ]
         };
 
         const categories = ['必修', '専門', '教養'];
@@ -112,7 +134,7 @@
             if (tabId === 'calendar') renderCalendar();
         };
 
-        // --- カレンダーロジック ---
+        // --- カレンダー処理 ---
         let currentCalendarDate = new Date();
         window.changeMonth = function(offset) {
             currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
@@ -138,7 +160,10 @@
                 const tasks = tasksData[dateKey] || [];
                 
                 let taskHtml = '<div class="task-list">';
-                tasks.forEach(t => taskHtml += `<div class="task-badge">${t}</div>`);
+                tasks.forEach(t => {
+                    let prefix = t.type === 'test' ? '⚠️ ' : (t.type === 'task' ? '📝 ' : '📌 ');
+                    taskHtml += `<div class="task-badge ${t.type}">${prefix}${t.text}</div>`;
+                });
                 taskHtml += '</div>';
 
                 html += `
@@ -153,7 +178,7 @@
 
         window.openTaskModal = function(y, m, d) {
             activeTaskDate = `${y}-${m}-${d}`;
-            document.getElementById('task-modal-title').innerText = `${m}月${d}日の課題`;
+            document.getElementById('task-modal-title').innerText = `${m}月${d}日の予定`;
             renderTaskList();
             document.getElementById('task-modal').style.display = 'flex';
         };
@@ -162,19 +187,37 @@
             const tasks = tasksData[activeTaskDate] || [];
             const container = document.getElementById('existing-tasks');
             if (tasks.length === 0) {
-                container.innerHTML = '<p style="font-size: 12px; color: #9ca3af; text-align: center;">課題はありません</p>';
+                container.innerHTML = '<p style="font-size: 12px; color: #9ca3af; text-align: center;">予定はありません</p>';
             } else {
                 let html = '';
+                const typeLabels = { 'task': '課題', 'test': 'テスト', 'other': 'その他' };
+                const classMap = { 'task': 'major', 'test': 'required', 'other': 'general' }; // 時間割の色設定を流用
+                
                 tasks.forEach((task, index) => {
                     html += `
                         <div class="task-entry">
-                            <span>${task}</span>
+                            <span class="badge ${classMap[task.type]}" style="margin-left:0; margin-right:4px;">${typeLabels[task.type]}</span>
+                            <span>${task.text}</span>
                             <button class="btn-done" onclick="deleteTask(${index})">完了</button>
                         </div>`;
                 });
                 container.innerHTML = html;
             }
         }
+
+        // 個別の入力エリアから追加する処理
+        window.handleAddTask = function(type) {
+            const input = document.getElementById(`task-input-${type}`);
+            const value = input.value.trim();
+            if (!value) return;
+
+            if (!tasksData[activeTaskDate]) tasksData[activeTaskDate] = [];
+            tasksData[activeTaskDate].push({ text: value, type: type });
+            
+            input.value = ''; // 追加した入力欄だけ空にする
+            renderTaskList();
+            renderCalendar();
+        };
 
         window.deleteTask = function(index) {
             tasksData[activeTaskDate].splice(index, 1);
@@ -183,17 +226,7 @@
             renderCalendar();
         };
 
-        document.getElementById('task-form').onsubmit = function(e) {
-            e.preventDefault();
-            const input = document.getElementById('task-input');
-            if (!tasksData[activeTaskDate]) tasksData[activeTaskDate] = [];
-            tasksData[activeTaskDate].push(input.value);
-            input.value = '';
-            renderTaskList();
-            renderCalendar();
-        };
-
-        // --- 共通・時間割ロジック ---
+        // --- 共通・時間割処理 ---
         window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
 
         function renderTimetable() {
@@ -202,7 +235,7 @@
                 if (course) {
                     const totalAbs = course.absence + (course.lateness / 3), rem = Math.max(0, 5 - totalAbs);
                     const remText = Number(rem.toFixed(2)), isDanger = rem <= 1;
-                    const alertMsg = rem <= 0 ? "残り欠席回数0でもって単位を落としますかな" : `あと "${remText}" 回欠席できます`;
+                    const alertMsg = rem < 0 ? "落単乙w" : rem = 0 ? "絶対に学校に行け！！" : `あと "${remText}" 回欠席できます`;
                     td.innerHTML = `
                         <div class="course-card ${categoryClasses[course.category]}">
                             <div onclick="openModal('${day}', ${period})">
