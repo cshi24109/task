@@ -3,124 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>出席管理アプリ</title>
-    <link rel="stylesheet" href="style.css">
+    <title>大学生活管理アプリ</title>
+    <style>
+        /* --- 全体デザイン --- */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        /* --- タブ切り替え --- */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; border: none; background: #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: bold; color: #4b5563; transition: all 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        
+        /* --- 時間割スタイル --- */
+        table { width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed; }
+        th, td { border: 1px solid #e5e7eb; border-radius: 8px; text-align: center; vertical-align: top; background: #fff; }
+        th { background: #f9fafb; padding: 10px; font-size: 14px; color: #4b5563; }
+        td { height: 130px; padding: 4px; position: relative; }
+        .btn-add { width: 100%; height: 100%; border: 2px dashed #d1d5db; background: transparent; color: #9ca3af; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-add:hover { background: #f9fafb; color: #6b7280; }
+        
+        /* 授業カードとカラー */
+        .course-card { height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: left; cursor: pointer; box-sizing: border-box; }
+        .required { background-color: #fee2e2; border-left: 4px solid #ef4444; }
+        .major { background-color: #e0f2fe; border-left: 4px solid #3b82f6; }
+        .general { background-color: #dcfce7; border-left: 4px solid #22c55e; }
+        .course-name { font-weight: bold; font-size: 13px; margin-top: 4px; color: #1f2937; word-break: break-all; }
+        
+        /* 出欠管理ゾーン */
+        .absence-zone { background: rgba(255,255,255,0.7); padding: 4px; border-radius: 4px; font-size: 11px; margin-top: 4px; }
+        .btn-zone button { width: 18px; height: 18px; font-size: 10px; padding: 0; margin-left: 2px; cursor: pointer; border: 1px solid #cbd5e1; background: #fff; border-radius: 3px; }
+
+        /* --- カレンダースタイル --- */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: #e5e7eb; padding: 4px; border-radius: 8px; }
+        .calendar-cell { background: white; min-height: 90px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; position: relative; }
+        .calendar-cell:hover .add-task-hint { opacity: 1; }
+        .calendar-cell.header { background: #f3f4f6; min-height: auto; text-align: center; font-weight: bold; font-size: 12px; padding: 6px 0; display: block; }
+        .calendar-cell.other-month { background: #f9fafb; color: #d1d5db; }
+        .date-num { font-size: 12px; font-weight: bold; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+        .date-num.today { background: #ef4444; color: white; border-radius: 50%; }
+        .add-task-hint { font-size: 9px; color: #3b82f6; text-align: center; opacity: 0; transition: opacity 0.2s; }
+        
+        /* タスクバッジ */
+        .task-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; overflow: hidden; }
+        .task-badge { font-size: 9px; padding: 1px 3px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+        .task-badge.task { background: #e0f2fe; color: #0369a1; }
+        .task-badge.test { background: #fee2e2; color: #b91c1c; }
+        .task-badge.other { background: #dcfce7; color: #15803d; }
+
+        /* --- 共通バッジ・モーダル --- */
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; }
+        .category-badge { font-size: 9px; background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-weight: bold; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; border: none; background: none; color: #9ca3af; }
+        
+        /* フォーム部品 */
+        .form-group { margin-bottom: 12px; text-align: left; }
+        .form-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #4b5563; }
+        .form-group input[type="text"] { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+        
+        /* ボタン類 */
+        .btn-submit { width: 100%; background: #3b82f6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-delete { width: 100%; background: #ef4444; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; display: none; }
+        .btn-done { background: #ef4444; color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+        
+        /* 予定作成セクション */
+        .task-section { border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px; }
+        .task-input-row { display: flex; gap: 4px; margin-bottom: 4px; }
+        .task-input-row input { flex: 1; padding: 4px; font-size: 12px; }
+        .task-input-row button { padding: 4px 10px; font-size: 11px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 3px; }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>出席管理アプリ</h1>
-        <select style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px;">
-            <option>2026年度 前期</option>
-            <option>2026年度 後期</option>
-        </select>
-    </header>
-
+<div class="container">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('timetable')">時間割</button>
-        <button class="tab-btn" onclick="switchTab('calendar')">カレンダー・課題</button>
+        <button class="tab-btn active" onclick="switchTab('timetable')">時間割・出欠</button>
+        <button class="tab-btn" onclick="switchTab('calendar')">カレンダー・予定</button>
     </div>
 
-    <main id="timetable-view">
+    <div id="timetable-view">
         <table>
             <thead>
                 <tr>
-                    <th style="width: 60px;">時限</th>
-                    <th>月曜日</th><th>火曜日</th><th>水曜日</th><th>木曜日</th><th>金曜日</th>
+                    <th style="width: 50px;">限</th>
+                    <th>月</th>
+                    <th>火</th>
+                    <th>水</th>
+                    <th>木</th>
+                    <th>金</th>
                 </tr>
             </thead>
             <tbody>
-                <tr data-period="1"><td class="time-col">1</td><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
-                <tr data-period="2"><td class="time-col">2</td><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
-                <tr data-period="3"><td class="time-col">3</td><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
-                <tr data-period="4"><td class="time-col">4</td><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
-                <tr data-period="5"><td class="time-col">5</td><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
+                <tr data-period="1"><th>1</th><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
+                <tr data-period="2"><th>2</th><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
+                <tr data-period="3"><th>3</th><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
+                <tr data-period="4"><th>4</th><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
+                <tr data-period="5"><th>5</th><td data-day="月"></td><td data-day="火"></td><td data-day="水"></td><td data-day="木"></td><td data-day="金"></td></tr>
             </tbody>
         </table>
-    </main>
-
-    <main id="calendar-view" style="display: none;">
-        <div class="calendar-header">
-            <button onclick="changeMonth(-1)">◀ 先月</button>
-            <h2 id="calendar-month-year">2026年 7月</h2>
-            <button onclick="changeMonth(1)">来月 ▶</button>
-        </div>
-        <div class="calendar-grid" id="calendar-grid"></div>
-    </main>
-
-    <div id="modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 id="modal-title">授業を設定</h3>
-            <form id="course-form">
-                <div class="form-group">
-                    <label>科目名</label>
-                    <input type="text" id="course-name-input" placeholder="例: 経済学基礎" required>
-                </div>
-                <div class="form-group">
-                    <label>科目区分: <span id="category-val" class="badge required">必修</span></label>
-                    <input type="range" id="category-slider" min="0" max="2" value="0" step="1">
-                    <div class="slider-labels"><span>必修</span><span>専門</span><span>教養</span></div>
-                </div>
-                <div class="form-group"><label>メモ</label><textarea id="course-memo-input" rows="3"></textarea></div>
-                <div class="btn-group-container">
-                    <button type="button" id="btn-delete" class="btn-danger" style="display: none;">削除</button>
-                    <div class="btn-sub-group"><button type="button" onclick="closeModal('modal')">閉じる</button><button type="submit">保存</button></div>
-                </div>
-            </form>
-        </div>
     </div>
 
-    <div id="task-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 id="task-modal-title">予定を管理</h3>
-            <div id="existing-tasks" style="margin-bottom: 15px; max-height: 160px; overflow-y: auto;"></div>
+    <div id="calendar-view" style="display: none;">
+        <div class="calendar-header">
+            <button onclick="changeMonth(-1)" style="cursor:pointer; padding:4px 10px;">◀ 前の月</button>
+            <h3 id="calendar-month-year" style="margin:0;">2026年 7月</h3>
+            <button onclick="changeMonth(1)" style="cursor:pointer; padding:4px 10px;">次の月 ▶</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+</div>
+
+<div id="modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal('modal')">&times;</button>
+        <h3 id="modal-title" style="margin-top:0;">授業設定</h3>
+        <form id="course-form">
+            <div class="form-group">
+                <label>授業名</label>
+                <input type="text" id="course-name-input" required placeholder="例: 経済学基礎">
+            </div>
+            <div class="form-group">
+                <label>科目区分</label>
+                <div class="slider-container">
+                    <input type="range" id="category-slider" min="0" max="2" value="0" style="flex:1;">
+                    <span id="category-val" class="badge required">必修</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>教室（メモ）</label>
+                <input type="text" id="course-memo-input" placeholder="例: 401教室 / オンデマンド">
+            </div>
+            <button type="submit" class="btn-submit">保存する</button>
+        </form>
+        <button id="btn-delete" class="btn-delete">この授業を削除</button>
+    </div>
+</div>
+
+<div id="task-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <button class="close-btn" onclick="closeModal('task-modal')">&times;</button>
+        <h3 id="task-modal-title" style="margin-top:0;">日付の予定</h3>
+        
+        <div id="existing-tasks" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;"></div>
+        
+        <div class="task-section">
+            <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #4b5563;">➕ 予定を追加する</h4>
             
-            <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                <div class="form-group">
-                    <label style="color: #1e40af;">📝 課題を追加</label>
-                    <div class="task-input-group">
-                        <input type="text" id="task-input-task" placeholder="課題を入力...">
-                        <input type="text" id="task-memo-task" placeholder="課題のメモ（提出方法、範囲など）" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
-                        <button onclick="handleAddTask('task')">追加</button>
-
-                        <input type="text" id="task-input-test" placeholder="テストを入力...">
-                        <input type="text" id="task-memo-test" placeholder="テストのメモ（持ち物、範囲など）" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
-                        <button onclick="handleAddTask('test')">追加</button>
-
-                        <input type="text" id="task-input-other" placeholder="その他を入力...">
-                        <input type="text" id="task-memo-other" placeholder="その他のメモ" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
-                        <button onclick="handleAddTask('other')">追加</button>
-                    </div>
+            <div style="margin-bottom: 10px; padding: 6px; background: #f9fafb; border-radius: 6px;">
+                <div class="task-input-row">
+                    <input type="text" id="task-input-task" placeholder="📝 課題のタイトルを入力...">
+                    <button onclick="handleAddTask('task')">追加</button>
                 </div>
-                <div class="form-group">
-                    <label style="color: #991b1b;">⚠️ テストを追加</label>
-                    <div class="task-input-group">
-                        <input type="text" id="task-input-test" placeholder="例: 中間試験">
-                        <button type="button" class="btn-add-test" onclick="handleAddTask('test')">追加</button>
-                    </div>
+                <input type="text" id="task-memo-task" placeholder="┗ 課題のメモ（提出方法・範囲など）" style="width:100%; font-size:11px; padding:3px; margin-top:2px; box-sizing:border-box;">
+            </div>
+            
+            <div style="margin-bottom: 10px; padding: 6px; background: #f9fafb; border-radius: 6px;">
+                <div class="task-input-row">
+                    <input type="text" id="task-input-test" placeholder="⚠️ テストのタイトルを入力...">
+                    <button onclick="handleAddTask('test')">追加</button>
                 </div>
-                <div class="form-group">
-                    <label style="color: #4b5563;">📌 その他を追加</label>
-                    <div class="task-input-group">
-                        <input type="text" id="task-input-other" placeholder="例: ガイダンス、補講">
-                        <button type="button" class="btn-add-other" onclick="handleAddTask('other')">追加</button>
-                    </div>
+                <input type="text" id="task-memo-test" placeholder="┗ テストのメモ（持ち物・範囲など）" style="width:100%; font-size:11px; padding:3px; margin-top:2px; box-sizing:border-box;">
+            </div>
+            
+            <div style="padding: 6px; background: #f9fafb; border-radius: 6px;">
+                <div class="task-input-row">
+                    <input type="text" id="task-input-other" placeholder="📌 その他のタイトルを入力...">
+                    <button onclick="handleAddTask('other')">追加</button>
                 </div>
-                
-                <div class="btn-group-container" style="margin-top: 15px;">
-                    <div class="btn-sub-group">
-                        <button type="button" onclick="closeModal('task-modal')">閉じる</button>
-                    </div>
-                </div>
+                <input type="text" id="task-memo-other" placeholder="┗ その他のメモ" style="width:100%; font-size:11px; padding:3px; margin-top:2px; box-sizing:border-box;">
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // ★index.htmlの最下部にあるscriptタグの中身を、このコードに丸ごと差し替えてください
+<script>
 let timetableData = {
     '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
 };
+
 let tasksData = {
     '2026-7-15': [
         { text: '経済レポート', type: 'task', memo: 'A4用紙3枚、ポータルからPDF提出' },
@@ -139,6 +203,13 @@ window.switchTab = function(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if (typeof window !== 'undefined' && window.event && window.event.target) {
         window.event.target.classList.add('active');
+    } else {
+        // イベントが取れなかった場合のフォールバック
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if((tabId === 'timetable' && btn.innerText.includes('時間割')) || (tabId === 'calendar' && btn.innerText.includes('カレンダー'))) {
+                btn.classList.add('active');
+            }
+        });
     }
     document.getElementById('timetable-view').style.display = tabId === 'timetable' ? 'block' : 'none';
     document.getElementById('calendar-view').style.display = tabId === 'calendar' ? 'block' : 'none';
@@ -155,25 +226,26 @@ window.changeMonth = function(offset) {
 function renderCalendar() {
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
-    document.getElementById('calendar-month-year').innerText = `${year}年 ${month + 1}月`;
+    document.getElementById('calendar-month-year').innerText = year + '年 ' + (month + 1) + '月';
     const firstDayIndex = new Date(year, month, 1).getDay();
     const lastDay = new Date(year, month + 1, 0).getDate();
     const grid = document.getElementById('calendar-grid');
     let html = '';
-    ['日', '月', '火', '水', '木', '金', '土'].forEach(d => html += `<div class="calendar-cell header">${d}</div>`);
     
-    for (let x = 0; x < firstDayIndex; x++) html += `<div class="calendar-cell other-month"></div>`;
+    ['日', '月', '火', '水', '木', '金', '土'].forEach(d => html += '<div class="calendar-cell header">' + d + '</div>');
+    
+    for (let x = 0; x < firstDayIndex; x++) html += '<div class="calendar-cell other-month"></div>';
     
     const today = new Date();
     for (let i = 1; i <= lastDay; i++) {
-        const dateKey = `${year}-${month+1}-${i}`;
+        const dateKey = year + '-' + (month + 1) + '-' + i;
         const isToday = i === today.getDate() && month === today.getMonth() && year === today.getFullYear();
         const tasks = tasksData[dateKey] || [];
         
         let taskHtml = '<div class="task-list">';
         tasks.forEach(t => {
             let prefix = t.type === 'test' ? '⚠️ ' : (t.type === 'task' ? '📝 ' : '📌 ');
-            taskHtml += `<div class="task-badge ${t.type}">${prefix}${t.text}</div>`;
+            taskHtml += '<div class="task-badge ' + t.type + '">' + prefix + t.text + '</div>';
         });
         taskHtml += '</div>';
 
@@ -188,8 +260,8 @@ function renderCalendar() {
 }
 
 window.openTaskModal = function(y, m, d) {
-    activeTaskDate = `${y}-${m}-${d}`;
-    document.getElementById('task-modal-title').innerText = `${m}月${d}日の予定`;
+    activeTaskDate = y + '-' + m + '-' + d;
+    document.getElementById('task-modal-title').innerText = m + '月' + d + '日の予定';
     renderTaskList();
     document.getElementById('task-modal').style.display = 'flex';
 };
@@ -205,14 +277,19 @@ function renderTaskList() {
         const classMap = { 'task': 'major', 'test': 'required', 'other': 'general' };
         
         tasks.forEach((task, index) => {
+            let memoDiv = '';
+            if (task.memo) {
+                memoDiv = '<div style="font-size: 11px; color: #6b7280; margin-top: 2px; padding-left: 6px; border-left: 2px solid #d1d5db; word-break: break-all;">' + task.memo + '</div>';
+            }
+            
             html += `
                 <div class="task-entry" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
                     <div style="flex: 1; text-align: left;">
                         <span class="badge ${classMap[task.type]}" style="margin-left:0; margin-right:4px;">${typeLabels[task.type]}</span>
                         <span style="font-weight: bold;">${task.text}</span>
-                        \${task.memo ? \`<div style="font-size: 11px; color: #6b7280; margin-top: 2px; padding-left: 6px; border-left: 2px solid #d1d5db; word-break: break-all;">\${task.memo}</div>\` : ''}
+                        ${memoDiv}
                     </div>
-                    <button class="btn-done" onclick="deleteTask(\${index})" style="margin-left: 8px;">完了</button>
+                    <button class="btn-done" onclick="deleteTask(${index})" style="margin-left: 8px;">完了</button>
                 </div>`;
         });
         container.innerHTML = html;
@@ -220,8 +297,8 @@ function renderTaskList() {
 }
 
 window.handleAddTask = function(type) {
-    const input = document.getElementById(`task-input-${type}`);
-    const memoInput = document.getElementById(`task-memo-${type}`);
+    const input = document.getElementById('task-input-' + type);
+    const memoInput = document.getElementById('task-memo-' + type);
     const value = input.value.trim();
     const memoValue = memoInput ? memoInput.value.trim() : '';
     if (!value) return;
@@ -250,27 +327,29 @@ function updateSliderLabel(value) {
     const labelSpan = document.getElementById('category-val');
     if (labelSpan) {
         labelSpan.innerText = cat;
-        labelSpan.className = `badge ${categoryClasses[cat]}`;
+        labelSpan.className = 'badge ' + categoryClasses[cat];
     }
 }
 
-document.getElementById('category-slider').addEventListener('input', (e) => {
-    updateSliderLabel(e.target.value);
-});
-
-// 時間割の描画（マスのなかに教室・メモを表示するよう修正）
 function renderTimetable() {
     document.querySelectorAll('td[data-day]').forEach(td => {
-        const day = td.getAttribute('data-day'), period = td.parentElement.getAttribute('data-period'), key = `${day}-${period}`, course = timetableData[key];
+        const day = td.getAttribute('data-day');
+        const period = td.parentElement.getAttribute('data-period');
+        const key = day + '-' + period;
+        const course = timetableData[key];
+        
         if (course) {
-            const totalAbs = course.absence + (course.lateness / 3), rem = Math.max(0, 5 - totalAbs);
-            const remText = Number(rem.toFixed(2)), isDanger = rem <= 1;
-            const alertMsg = rem < 0 ? "落単乙" : rem = 0 ? "絶対に学校に行け！！" : `あと "${remText}" 回欠席できます`;
+            const totalAbs = course.absence + (course.lateness / 3);
+            const rem = Math.max(0, 5 - totalAbs);
+            const remText = Number(rem.toFixed(2));
+            const isDanger = rem <= 1;
+            const alertMsg = rem < 0 ? "落単" : rem = 0 ? "残り欠席回数0回。単位を落とします。" : "あと " + remText + " 回欠席できます";
             
-            // ★教室（memo）があれば、授業名の下に薄い背景付きで表示する仕組みを追加
-            const memoHtml = course.memo 
-                ? `<div class="course-room" style="font-size: 10px; color: #4b5563; background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 4px; font-weight: 500; word-break: break-all;">🚪 ${course.memo}</div>` 
-                : '';
+            // 教室名表示のHTMLを生成
+            let memoHtml = '';
+            if (course.memo) {
+                memoHtml = '<div class="course-room" style="font-size: 10px; color: #4b5563; background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 4px; font-weight: 500; word-break: break-all;">🚪 ' + course.memo + '</div>';
+            }
 
             td.innerHTML = `
                 <div class="course-card ${categoryClasses[course.category]}">
@@ -279,7 +358,7 @@ function renderTimetable() {
                         <div class="course-name">${course.name}</div>
                         ${memoHtml}
                     </div>
-                    <div class="absence-zone" style="flex-direction: column; align-items: stretch; gap: 4px;">
+                    <div class="absence-zone" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px;">
                         <div style="display: flex; justify-content: space-between;"><span>欠席: <b>${course.absence}</b>回</span>
                             <div class="btn-zone"><button onclick="changeCount('${key}','absence',-1)">-</button><button onclick="changeCount('${key}','absence',1)">+</button></div></div>
                         <div style="display: flex; justify-content: space-between;"><span>遅刻: <b>${course.lateness}</b>回</span>
@@ -288,20 +367,25 @@ function renderTimetable() {
                     </div>
                 </div>`;
         } else {
-            td.innerHTML = `<button class="btn-add" onclick="openModal('${day}', ${period})">+ 追加</button>`;
+            td.innerHTML = '<button class="btn-add" onclick="openModal(\'' + day + '\', ' + period + ')">+ 追加</button>';
         }
     });
 }
 
 window.changeCount = function(key, type, amt) {
-    if (timetableData[key]) { timetableData[key][type] = Math.max(0, (timetableData[key][type] || 0) + amt); renderTimetable(); }
+    if (timetableData[key]) { 
+        timetableData[key][type] = Math.max(0, (timetableData[key][type] || 0) + amt); 
+        renderTimetable(); 
+    }
 };
 
 window.openModal = function(day, period) {
-    activeTargetKey = `${day}-${period}`;
-    document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
+    activeTargetKey = day + '-' + period;
+    document.getElementById('modal-title').innerText = day + '曜日 ' + period + '限の授業設定';
     
-    const existing = timetableData[activeTargetKey], deleteBtn = document.getElementById('btn-delete');
+    const existing = timetableData[activeTargetKey];
+    const deleteBtn = document.getElementById('btn-delete');
+    
     if (existing) {
         document.getElementById('course-name-input').value = existing.name;
         document.getElementById('course-memo-input').value = existing.memo || '';
@@ -332,9 +416,20 @@ document.getElementById('course-form').onsubmit = function(e) {
     renderTimetable();
 };
 
-document.getElementById('btn-delete').onclick = function() { delete timetableData[activeTargetKey]; closeModal('modal'); renderTimetable(); };
+document.getElementById('btn-delete').onclick = function() { 
+    delete timetableData[activeTargetKey]; 
+    closeModal('modal'); 
+    renderTimetable(); 
+};
 
-renderTimetable();
-    </script>
+// 初期読み込み時のイベントリスナー登録とレンダリング
+window.onload = function() {
+    document.getElementById('category-slider').addEventListener('input', (e) => {
+        updateSliderLabel(e.target.value);
+    });
+    renderTimetable();
+};
+</script>
+
 </body>
 </html>
