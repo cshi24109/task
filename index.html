@@ -63,14 +63,19 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>科目区分: <span id="category-val" class="badge required">必修</span></label>
-                    <input type="range" id="category-slider" min="0" max="2" value="0" step="1">
-                    <div class="slider-labels">
-                        <span>必修</span>
-                        <span>専門</span>
-                        <span>教養</span>
-                    </div>
-                </div>
+    <label>科目区分: <span id="category-val" class="badge required">必修</span></label>
+    <input type="range" id="category-slider" min="0" max="2" value="0" step="1">
+    <div class="slider-labels">
+        <span>必修</span>
+        <span>専門</span>
+        <span>教養</span>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>メモ (教室・評価基準など)</label>
+    <textarea id="course-memo-input" placeholder="例: 301教室、レポート40% 試験60%" rows="3" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 13px;"></textarea>
+</div>
 
                 <div class="btn-group-container">
                     <button type="button" id="btn-delete" class="btn-danger" style="display: none;">削除</button>
