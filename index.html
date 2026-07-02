@@ -79,8 +79,17 @@
                 <div class="form-group">
                     <label style="color: #1e40af;">📝 課題を追加</label>
                     <div class="task-input-group">
-                        <input type="text" id="task-input-task" placeholder="例: レポート提出">
-                        <button type="button" class="btn-add-task" onclick="handleAddTask('task')">追加</button>
+                        <input type="text" id="task-input-task" placeholder="課題を入力...">
+                        <input type="text" id="task-memo-task" placeholder="課題のメモ（提出方法、範囲など）" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
+                        <button onclick="handleAddTask('task')">追加</button>
+
+                        <input type="text" id="task-input-test" placeholder="テストを入力...">
+                        <input type="text" id="task-memo-test" placeholder="テストのメモ（持ち物、範囲など）" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
+                        <button onclick="handleAddTask('test')">追加</button>
+
+                        <input type="text" id="task-input-other" placeholder="その他を入力...">
+                        <input type="text" id="task-memo-other" placeholder="その他のメモ" style="width:100%; margin-top:4px; font-size:12px; padding:4px;">
+                        <button onclick="handleAddTask('other')">追加</button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -112,11 +121,12 @@
 let timetableData = {
     '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
 };
+// サンプルデータにメモを追加
 let tasksData = {
     '2026-7-15': [
-        { text: '経済レポート', type: 'task' },
-        { text: '数学中間テスト', type: 'test' },
-        { text: 'サークル部費回収', type: 'other' }
+        { text: '経済レポート', type: 'task', memo: 'A4用紙3枚、ポータルからPDF提出' },
+        { text: '数学中間テスト', type: 'test', memo: '範囲：教科書p.10〜p.50（電卓持込可）' },
+        { text: 'サークル部費回収', type: 'other', memo: '一人500円、会計の山田くんに渡す' }
     ]
 };
 
@@ -125,7 +135,7 @@ const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'ge
 let activeTargetKey = null;
 let activeTaskDate = null;
 
-// --- タブ切り替え（ブラウザエラーが起きないよう安全に修正） ---
+// --- タブ切り替え ---
 window.switchTab = function(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     if (typeof window !== 'undefined' && window.event && window.event.target) {
@@ -185,6 +195,7 @@ window.openTaskModal = function(y, m, d) {
     document.getElementById('task-modal').style.display = 'flex';
 };
 
+// 予定一覧のレンダリング（メモの表示に対応）
 function renderTaskList() {
     const tasks = tasksData[activeTaskDate] || [];
     const container = document.getElementById('existing-tasks');
@@ -197,25 +208,32 @@ function renderTaskList() {
         
         tasks.forEach((task, index) => {
             html += `
-                <div class="task-entry">
-                    <span class="badge ${classMap[task.type]}" style="margin-left:0; margin-right:4px;">${typeLabels[task.type]}</span>
-                    <span>${task.text}</span>
-                    <button class="btn-done" onclick="deleteTask(${index})">完了</button>
+                <div class="task-entry" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
+                    <div style="flex: 1; text-align: left;">
+                        <span class="badge ${classMap[task.type]}" style="margin-left:0; margin-right:4px;">${typeLabels[task.type]}</span>
+                        <span style="font-weight: bold;">${task.text}</span>
+                        \${task.memo ? \`<div style="font-size: 11px; color: #6b7280; margin-top: 2px; padding-left: 6px; border-left: 2px solid #d1d5db; word-break: break-all;">\${task.memo}</div>\` : ''}
+                    </div>
+                    <button class="btn-done" onclick="deleteTask(\${index})" style="margin-left: 8px;">完了</button>
                 </div>`;
         });
         container.innerHTML = html;
     }
 }
 
+// 予定の追加処理（メモの取得・クリアに対応）
 window.handleAddTask = function(type) {
     const input = document.getElementById(`task-input-${type}`);
+    const memoInput = document.getElementById(`task-memo-${type}`);
     const value = input.value.trim();
+    const memoValue = memoInput ? memoInput.value.trim() : '';
     if (!value) return;
 
     if (!tasksData[activeTaskDate]) tasksData[activeTaskDate] = [];
-    tasksData[activeTaskDate].push({ text: value, type: type });
+    tasksData[activeTaskDate].push({ text: value, type: type, memo: memoValue });
     
     input.value = '';
+    if (memoInput) memoInput.value = ''; // メモの入力欄をクリア
     renderTaskList();
     renderCalendar();
 };
@@ -230,7 +248,6 @@ window.deleteTask = function(index) {
 // --- 時間割処理・共通処理 ---
 window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
 
-// 科目区分のバッジ表示を更新する関数（復活）
 function updateSliderLabel(value) {
     const cat = categories[value];
     const labelSpan = document.getElementById('category-val');
@@ -240,7 +257,6 @@ function updateSliderLabel(value) {
     }
 }
 
-// スライダーを動かした時にリアルタイムで文字を変えるリスナー（復活）
 document.getElementById('category-slider').addEventListener('input', (e) => {
     updateSliderLabel(e.target.value);
 });
@@ -278,7 +294,6 @@ window.changeCount = function(key, type, amt) {
 
 window.openModal = function(day, period) {
     activeTargetKey = `${day}-${period}`;
-    // モーダルのタイトル書き換えを復活
     document.getElementById('modal-title').innerText = `${day}曜日 ${period}限の授業設定`;
     
     const existing = timetableData[activeTargetKey], deleteBtn = document.getElementById('btn-delete');
@@ -287,13 +302,13 @@ window.openModal = function(day, period) {
         document.getElementById('course-memo-input').value = existing.memo || '';
         const catIndex = categories.indexOf(existing.category);
         document.getElementById('category-slider').value = catIndex;
-        updateSliderLabel(catIndex); // 初期ラベルの同期を復活
+        updateSliderLabel(catIndex);
         deleteBtn.style.display = 'block';
     } else {
         document.getElementById('course-name-input').value = '';
         document.getElementById('course-memo-input').value = '';
         document.getElementById('category-slider').value = 0;
-        updateSliderLabel(0); // 初期ラベルの同期を復活
+        updateSliderLabel(0);
         deleteBtn.style.display = 'none';
     }
     document.getElementById('modal').style.display = 'flex';
