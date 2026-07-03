@@ -131,13 +131,12 @@
 </div>
 
 <script>
-// 学期ごとに独立した時間割データを保持できるように構造を変更
 let timetableData = {
     '2026年度 前期': {
         '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
     }
 };
-let currentSemester = '2026年度 前期'; // 現在選ばれている学期
+let currentSemester = '2026年度 前期';
 
 let tasksData = {
     '2026-7-15': [
@@ -200,7 +199,6 @@ window.handleAddSemester = function() {
         return;
     }
     
-    // 新しい学期のデータ枠を作成
     timetableData[name] = {};
     currentSemester = name;
     
@@ -332,16 +330,19 @@ function renderTimetable() {
         const period = td.parentElement.getAttribute('data-period');
         const key = day + '-' + period;
         
-        // 選択されている学期のデータを読み込む
         const semesterData = timetableData[currentSemester] || {};
         const course = semesterData[key];
         
         if (course) {
             const totalAbs = course.absence + (course.lateness / 3);
-            const rem = Math.max(0, 5 - totalAbs);
+            
+            // 💡 ここで残り回数を計算（マイナスも許容するため、Math.maxは外してあります）
+            const rem = 5 - totalAbs;
             const remText = Number(rem.toFixed(2));
-            const isDanger = rem <= 1;
+            
+            // 🛠 修正されたアラート文言の条件分岐（= を === に修正）
             const alertMsg = rem < 0 ? "落単 乙w" : rem === 0 ? "絶対に学校に行け！！" : "あと " + remText + " 回欠席できます";
+            const isDanger = rem <= 1;
             
             let memoHtml = '';
             if (course.memo) {
