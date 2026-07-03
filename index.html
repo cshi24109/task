@@ -341,7 +341,7 @@ function renderTimetable() {
             const rem = Math.max(0, 5 - totalAbs);
             const remText = Number(rem.toFixed(2));
             const isDanger = rem <= 1;
-            const alertMsg = rem < 0 ? "落単 乙w" : rem == 0 ? "絶対に学校に行け！！" : "あと " + remText + " 回欠席できます";
+            const alertMsg = rem < 0 ? "落単 乙w" : rem === 0 ? "絶対に学校に行け！！" : "あと " + remText + " 回欠席できます";
             
             let memoHtml = '';
             if (course.memo) {
