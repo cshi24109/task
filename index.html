@@ -4,78 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大学生活管理アプリ</title>
-    <style>
-        /* --- 全体デザイン --- */
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; color: #1f2937; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
-        /* --- タブ切り替え --- */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
-        .tab-btn { padding: 10px 20px; border: none; background: #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: bold; color: #4b5563; transition: all 0.2s; }
-        .tab-btn.active { background: #3b82f6; color: white; }
-        
-        /* --- 時間割スタイル --- */
-        table { width: 100%; border-collapse: separate; border-spacing: 8px; table-layout: fixed; }
-        th, td { border: 1px solid #e5e7eb; border-radius: 8px; text-align: center; vertical-align: top; background: #fff; }
-        th { background: #f9fafb; padding: 10px; font-size: 14px; color: #4b5563; }
-        td { height: 130px; padding: 4px; position: relative; }
-        .btn-add { width: 100%; height: 100%; border: 2px dashed #d1d5db; background: transparent; color: #9ca3af; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-add:hover { background: #f9fafb; color: #6b7280; }
-        
-        /* 授業カードとカラー */
-        .course-card { height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 6px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: left; cursor: pointer; box-sizing: border-box; }
-        .required { background-color: #fee2e2; border-left: 4px solid #ef4444; }
-        .major { background-color: #e0f2fe; border-left: 4px solid #3b82f6; }
-        .general { background-color: #dcfce7; border-left: 4px solid #22c55e; }
-        .course-name { font-weight: bold; font-size: 13px; margin-top: 4px; color: #1f2937; word-break: break-all; }
-        
-        /* 出欠管理ゾーン */
-        .absence-zone { background: rgba(255,255,255,0.7); padding: 4px; border-radius: 4px; font-size: 11px; margin-top: 4px; }
-        .btn-zone button { width: 18px; height: 18px; font-size: 10px; padding: 0; margin-left: 2px; cursor: pointer; border: 1px solid #cbd5e1; background: #fff; border-radius: 3px; }
-
-        /* --- カレンダースタイル --- */
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: #e5e7eb; padding: 4px; border-radius: 8px; }
-        .calendar-cell { background: white; min-height: 90px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; position: relative; }
-        .calendar-cell:hover .add-task-hint { opacity: 1; }
-        .calendar-cell.header { background: #f3f4f6; min-height: auto; text-align: center; font-weight: bold; font-size: 12px; padding: 6px 0; display: block; }
-        .calendar-cell.other-month { background: #f9fafb; color: #d1d5db; }
-        .date-num { font-size: 12px; font-weight: bold; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
-        .date-num.today { background: #ef4444; color: white; border-radius: 50%; }
-        .add-task-hint { font-size: 9px; color: #3b82f6; text-align: center; opacity: 0; transition: opacity 0.2s; }
-        
-        /* タスクバッジ */
-        .task-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; overflow: hidden; }
-        .task-badge { font-size: 9px; padding: 1px 3px; border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
-        .task-badge.task { background: #e0f2fe; color: #0369a1; }
-        .task-badge.test { background: #fee2e2; color: #b91c1c; }
-        .task-badge.other { background: #dcfce7; color: #15803d; }
-
-        /* --- 共通バッジ・モーダル --- */
-        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; }
-        .category-badge { font-size: 9px; background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-weight: bold; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; border: none; background: none; color: #9ca3af; }
-        
-        /* フォーム部品 */
-        .form-group { margin-bottom: 12px; text-align: left; }
-        .form-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #4b5563; }
-        .form-group input[type="text"] { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
-        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-        
-        /* ボタン類 */
-        .btn-submit { width: 100%; background: #3b82f6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-delete { width: 100%; background: #ef4444; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; display: none; }
-        .btn-done { background: #ef4444; color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; }
-        
-        /* 予定作成セクション */
-        .task-section { border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px; }
-        .task-input-row { display: flex; gap: 4px; margin-bottom: 4px; }
-        .task-input-row input { flex: 1; padding: 4px; font-size: 12px; }
-        .task-input-row button { padding: 4px 10px; font-size: 11px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 3px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -204,7 +133,6 @@ window.switchTab = function(tabId) {
     if (typeof window !== 'undefined' && window.event && window.event.target) {
         window.event.target.classList.add('active');
     } else {
-        // イベントが取れなかった場合のフォールバック
         document.querySelectorAll('.tab-btn').forEach(btn => {
             if((tabId === 'timetable' && btn.innerText.includes('時間割')) || (tabId === 'calendar' && btn.innerText.includes('カレンダー'))) {
                 btn.classList.add('active');
@@ -343,9 +271,8 @@ function renderTimetable() {
             const rem = Math.max(0, 5 - totalAbs);
             const remText = Number(rem.toFixed(2));
             const isDanger = rem <= 1;
-            const alertMsg = rem < 0 ? "落単" : rem = 0 ? "残り欠席回数0回。単位を落とします。" : "あと " + remText + " 回欠席できます";
+            const alertMsg = rem <= 0 ? "残り欠席回数0回。単位を落とします。" : "あと " + remText + " 回欠席できます";
             
-            // 教室名表示のHTMLを生成
             let memoHtml = '';
             if (course.memo) {
                 memoHtml = '<div class="course-room" style="font-size: 10px; color: #4b5563; background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 4px; font-weight: 500; word-break: break-all;">🚪 ' + course.memo + '</div>';
@@ -422,7 +349,6 @@ document.getElementById('btn-delete').onclick = function() {
     renderTimetable(); 
 };
 
-// 初期読み込み時のイベントリスナー登録とレンダリング
 window.onload = function() {
     document.getElementById('category-slider').addEventListener('input', (e) => {
         updateSliderLabel(e.target.value);
@@ -430,6 +356,5 @@ window.onload = function() {
     renderTimetable();
 };
 </script>
-
 </body>
 </html>
