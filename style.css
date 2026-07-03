@@ -38,6 +38,32 @@ body {
     color: white; 
 }
 
+/* 🆕 学期（過去・未来）選択ゾーン */
+.semester-select-zone {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    background: #f9fafb;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+.semester-select {
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: white;
+    font-weight: bold;
+    cursor: pointer;
+    color: #1f2937;
+}
+.semester-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
 /* --- 時間割スタイル --- */
 table { 
     width: 100%; 
@@ -243,6 +269,8 @@ td {
 
 /* ボタン類 */
 .btn-submit { width: 100%; background: #3b82f6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-secondary { background: #4b5563; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.btn-secondary:hover { background: #374151; }
 .btn-delete { width: 100%; background: #ef4444; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; display: none; }
 .btn-done { background: #ef4444; color: white; border: none; padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer; }
 

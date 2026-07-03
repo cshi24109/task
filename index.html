@@ -15,6 +15,15 @@
     </div>
 
     <div id="timetable-view">
+        <div class="semester-select-zone">
+            <div>
+                <label style="font-size: 12px; font-weight: bold; color: #4b5563; margin-right: 6px;">表示中の時間割:</label>
+                <select id="semester-select" class="semester-select" onchange="handleSemesterChange(this.value)">
+                    </select>
+            </div>
+            <button class="btn-secondary" onclick="openAddSemesterModal()">＋ 新しい学期を追加</button>
+        </div>
+
         <table>
             <thead>
                 <tr>
@@ -109,10 +118,26 @@
     </div>
 </div>
 
+<div id="semester-modal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal('semester-modal')">&times;</button>
+        <h3 style="margin-top:0;">新しい時間割（学期）を作成</h3>
+        <div class="form-group">
+            <label>学期名・タイトル</label>
+            <input type="text" id="new-semester-input" placeholder="例: 2026年度 後期 / 2025年度 前期">
+        </div>
+        <button class="btn-submit" onclick="handleAddSemester()">作成する</button>
+    </div>
+</div>
+
 <script>
+// 学期ごとに独立した時間割データを保持できるように構造を変更
 let timetableData = {
-    '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
+    '2026年度 前期': {
+        '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
+    }
 };
+let currentSemester = '2026年度 前期'; // 現在選ばれている学期
 
 let tasksData = {
     '2026-7-15': [
@@ -142,6 +167,46 @@ window.switchTab = function(tabId) {
     document.getElementById('timetable-view').style.display = tabId === 'timetable' ? 'block' : 'none';
     document.getElementById('calendar-view').style.display = tabId === 'calendar' ? 'block' : 'none';
     if (tabId === 'calendar') renderCalendar();
+};
+
+// --- 学期（セメスター）追加・変更処理 ---
+function updateSemesterSelect() {
+    const select = document.getElementById('semester-select');
+    if (!select) return;
+    let html = '';
+    for (let sem in timetableData) {
+        html += `<option value="${sem}" ${sem === currentSemester ? 'selected' : ''}>${sem}</option>`;
+    }
+    select.innerHTML = html;
+}
+
+window.handleSemesterChange = function(value) {
+    currentSemester = value;
+    renderTimetable();
+};
+
+window.openAddSemesterModal = function() {
+    document.getElementById('new-semester-input').value = '';
+    document.getElementById('semester-modal').style.display = 'flex';
+};
+
+window.handleAddSemester = function() {
+    const input = document.getElementById('new-semester-input');
+    const name = input.value.trim();
+    if (!name) return;
+    
+    if (timetableData[name]) {
+        alert('その学期名は既に作成されています。');
+        return;
+    }
+    
+    // 新しい学期のデータ枠を作成
+    timetableData[name] = {};
+    currentSemester = name;
+    
+    closeModal('semester-modal');
+    updateSemesterSelect();
+    renderTimetable();
 };
 
 // --- カレンダー処理 ---
@@ -260,11 +325,16 @@ function updateSliderLabel(value) {
 }
 
 function renderTimetable() {
+    updateSemesterSelect();
+    
     document.querySelectorAll('td[data-day]').forEach(td => {
         const day = td.getAttribute('data-day');
         const period = td.parentElement.getAttribute('data-period');
         const key = day + '-' + period;
-        const course = timetableData[key];
+        
+        // 選択されている学期のデータを読み込む
+        const semesterData = timetableData[currentSemester] || {};
+        const course = semesterData[key];
         
         if (course) {
             const totalAbs = course.absence + (course.lateness / 3);
@@ -300,8 +370,8 @@ function renderTimetable() {
 }
 
 window.changeCount = function(key, type, amt) {
-    if (timetableData[key]) { 
-        timetableData[key][type] = Math.max(0, (timetableData[key][type] || 0) + amt); 
+    if (timetableData[currentSemester] && timetableData[currentSemester][key]) { 
+        timetableData[currentSemester][key][type] = Math.max(0, (timetableData[currentSemester][key][type] || 0) + amt); 
         renderTimetable(); 
     }
 };
@@ -310,7 +380,7 @@ window.openModal = function(day, period) {
     activeTargetKey = day + '-' + period;
     document.getElementById('modal-title').innerText = day + '曜日 ' + period + '限の授業設定';
     
-    const existing = timetableData[activeTargetKey];
+    const existing = timetableData[currentSemester] ? timetableData[currentSemester][activeTargetKey] : null;
     const deleteBtn = document.getElementById('btn-delete');
     
     if (existing) {
@@ -332,11 +402,14 @@ window.openModal = function(day, period) {
 
 document.getElementById('course-form').onsubmit = function(e) {
     e.preventDefault();
-    timetableData[activeTargetKey] = {
+    if (!timetableData[currentSemester]) timetableData[currentSemester] = {};
+    
+    const existing = timetableData[currentSemester][activeTargetKey];
+    timetableData[currentSemester][activeTargetKey] = {
         name: document.getElementById('course-name-input').value,
         category: categories[document.getElementById('category-slider').value],
-        absence: timetableData[activeTargetKey] ? timetableData[activeTargetKey].absence : 0,
-        lateness: timetableData[activeTargetKey] ? timetableData[activeTargetKey].lateness : 0,
+        absence: existing ? existing.absence : 0,
+        lateness: existing ? existing.lateness : 0,
         memo: document.getElementById('course-memo-input').value
     };
     closeModal('modal');
@@ -344,7 +417,9 @@ document.getElementById('course-form').onsubmit = function(e) {
 };
 
 document.getElementById('btn-delete').onclick = function() { 
-    delete timetableData[activeTargetKey]; 
+    if (timetableData[currentSemester]) {
+        delete timetableData[currentSemester][activeTargetKey]; 
+    }
     closeModal('modal'); 
     renderTimetable(); 
 };
