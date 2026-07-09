@@ -15,19 +15,32 @@
     </div>
 
     <div id="timetable-view">
-        <div class="semester-select-zone">
-            <div>
-                <label style="font-size: 12px; font-weight: bold; color: #4b5563; margin-right: 6px;">表示中の時間割:</label>
-                <select id="semester-select" class="semester-select" onchange="handleSemesterChange(this.value)">
-                    </select>
-                <span id="total-credits-view" style="margin-left: 15px; font-size: 13px; font-weight: bold; color: #1e3a8a; background: #dbeafe; padding: 6px 12px; border-radius: 20px; display: inline-block; vertical-align: middle;">
-                    🔥 登録単位数: 0 単位
-                </span>
+        <div class="semester-select-zone" style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start; background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; color: #4b5563; margin-right: 6px;">表示中の時間割:</label>
+                    <select id="semester-select" class="semester-select" onchange="handleSemesterChange(this.value)">
+                        </select>
+                </div>
+                <button class="btn-secondary" onclick="openAddSemesterModal()">＋ 新しい学期を追加</button>
             </div>
-            <button class="btn-secondary" onclick="openAddSemesterModal()">＋ 新しい学期を追加</button>
+
+            <div id="total-credits-view" style="width: 100%; font-size: 12px; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; box-sizing: border-box;">
+                <div style="font-weight: bold; color: #1f2937; margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <span>📊 今学期の登録単位:</span>
+                    <span id="credits-current-total" style="color: #1e3a8a; font-size: 16px; font-weight: 900;">0</span> 単位 
+                    <span style="color: #9ca3af; margin: 0 4px;">|</span>
+                    <span class="badge required" style="margin:0;">必修</span> <span id="credits-req" style="font-weight:bold; margin-right:8px;">0</span>
+                    <span class="badge major" style="margin:0;">専門</span> <span id="credits-maj" style="font-weight:bold; margin-right:8px;">0</span>
+                    <span class="badge general" style="margin:0;">教養</span> <span id="credits-gen" style="font-weight:bold;">0</span>
+                </div>
+                <div style="font-weight: bold; color: #059669; font-size: 14px; border-top: 1px dashed #e5e7eb; padding-top: 6px; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                    🎓 歴代の総取得（登録）単位数: <span id="credits-lifetime" style="font-size: 18px; font-weight: 900; color: #059669;">0</span> 単位
+                </div>
+            </div>
         </div>
 
-        <table>
+        <table style="margin-top: 15px;">
             <thead>
                 <tr>
                     <th style="width: 50px;">限</th>
@@ -92,20 +105,16 @@
     <div class="modal-content" style="max-width: 450px;">
         <button class="close-btn" onclick="closeModal('task-modal')">&times;</button>
         <h3 id="task-modal-title" style="margin-top:0;">日付の予定</h3>
-        
         <div id="existing-tasks" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;"></div>
-        
         <div class="task-section">
             <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #4b5563;">➕ 予定を追加する</h4>
-            
             <div style="margin-bottom: 10px; padding: 6px; background: #f9fafb; border-radius: 6px;">
                 <div class="task-input-row">
-                    <input type="text" id="task-input-task" placeholder="📝 課題的タイトルを入力...">
+                    <input type="text" id="task-input-task" placeholder="📝 課題のタイトルを入力...">
                     <button onclick="handleAddTask('task')">追加</button>
                 </div>
                 <input type="text" id="task-memo-task" placeholder="┗ 課題のメモ（提出方法・範囲など）" style="width:100%; font-size:11px; padding:3px; margin-top:2px; box-sizing:border-box;">
             </div>
-            
             <div style="margin-bottom: 10px; padding: 6px; background: #f9fafb; border-radius: 6px;">
                 <div class="task-input-row">
                     <input type="text" id="task-input-test" placeholder="⚠️ テストのタイトルを入力...">
@@ -113,7 +122,6 @@
                 </div>
                 <input type="text" id="task-memo-test" placeholder="┗ テストのメモ（持ち物・範囲など）" style="width:100%; font-size:11px; padding:3px; margin-top:2px; box-sizing:border-box;">
             </div>
-            
             <div style="padding: 6px; background: #f9fafb; border-radius: 6px;">
                 <div class="task-input-row">
                     <input type="text" id="task-input-other" placeholder="📌 その他のタイトルを入力...">
@@ -138,18 +146,22 @@
 </div>
 
 <script>
+// 🆕 歴代カウントが確認しやすいよう、過去の学期データも最初から入れてあります
 let timetableData = {
     '2026年度 前期': {
-        '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室', credits: 2 }
+        '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室', credits: 2 },
+        '火-3': { name: 'プログラミングI', category: '専門', absence: 0, lateness: 0, memo: 'PC第1教室', credits: 4 }
+    },
+    '2025年度 後期': {
+        '水-2': { name: '経済学概論', category: '教養', absence: 0, lateness: 0, memo: '101教室', credits: 2 },
+        '木-4': { name: 'データ構造', category: '専門', absence: 0, lateness: 0, memo: '302教室', credits: 4 }
     }
 };
 let currentSemester = '2026年度 前期';
 
 let tasksData = {
     '2026-7-15': [
-        { text: '経済レポート', type: 'task', memo: 'A4用紙3枚、ポータルからPDF提出' },
-        { text: '数学中間テスト', type: 'test', memo: '範囲：教科書p.10〜p.50（電卓持込可）' },
-        { text: 'サークル部費回収', type: 'other', memo: '一人500円、会計の山田くんに渡す' }
+        { text: '経済レポート', type: 'task', memo: 'A4用紙3枚、ポータルからPDF提出' }
     ]
 };
 
@@ -158,22 +170,20 @@ const categoryClasses = { '必修': 'required', '専門': 'major', '教養': 'ge
 let activeTargetKey = null;
 let activeTaskDate = null;
 
-// --- タブ切り替え（window.eventに依存しない安全な方式に修正） ---
+// --- タブ切り替え ---
 window.switchTab = function(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    
     if (tabId === 'timetable') {
         document.getElementById('tab-timetable').classList.add('active');
     } else if (tabId === 'calendar') {
         document.getElementById('tab-calendar').classList.add('active');
     }
-    
     document.getElementById('timetable-view').style.display = tabId === 'timetable' ? 'block' : 'none';
     document.getElementById('calendar-view').style.display = tabId === 'calendar' ? 'block' : 'none';
     if (tabId === 'calendar') renderCalendar();
 };
 
-// --- 学期（セメスター）追加・変更処理 ---
+// --- 学期追加・変更処理 ---
 function updateSemesterSelect() {
     const select = document.getElementById('semester-select');
     if (!select) return;
@@ -198,15 +208,12 @@ window.handleAddSemester = function() {
     const input = document.getElementById('new-semester-input');
     const name = input.value.trim();
     if (!name) return;
-    
     if (timetableData[name]) {
         alert('その学期名は既に作成されています。');
         return;
     }
-    
     timetableData[name] = {};
     currentSemester = name;
-    
     closeModal('semester-modal');
     updateSemesterSelect();
     renderTimetable();
@@ -230,7 +237,6 @@ function renderCalendar() {
     let html = '';
     
     ['日', '月', '火', '水', '木', '金', '土'].forEach(d => html += '<div class="calendar-cell header">' + d + '</div>');
-    
     for (let x = 0; x < firstDayIndex; x++) html += '<div class="calendar-cell other-month"></div>';
     
     const today = new Date();
@@ -279,7 +285,6 @@ function renderTaskList() {
             if (task.memo) {
                 memoDiv = '<div style="font-size: 11px; color: #6b7280; margin-top: 2px; padding-left: 6px; border-left: 2px solid #d1d5db; word-break: break-all;">' + task.memo + '</div>';
             }
-            
             html += `
                 <div class="task-entry" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
                     <div style="flex: 1; text-align: left;">
@@ -319,7 +324,7 @@ window.deleteTask = function(index) {
     renderCalendar();
 };
 
-// --- 時間割処理・共通処理 ---
+// --- 時間割・集計処理 ---
 window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
 
 function updateSliderLabel(value) {
@@ -334,33 +339,50 @@ function updateSliderLabel(value) {
 function renderTimetable() {
     updateSemesterSelect();
     
-    // 単位数の合計を計算
-    let totalCredits = 0;
-    const semesterData = timetableData[currentSemester] || {};
+    // 🆕 単位数の集計ロジック（今学期の内訳 ＆ 歴代の総計）
+    let currentCredits = { '必修': 0, '専門': 0, '教養': 0, '合計': 0 };
+    let lifetimeCredits = 0;
     
+    // ① 表示中（今学期）の集計
+    const semesterData = timetableData[currentSemester] || {};
     for (let key in semesterData) {
         if (semesterData[key] && semesterData[key].credits) {
-            totalCredits += Number(semesterData[key].credits);
+            const credits = Number(semesterData[key].credits);
+            const cat = semesterData[key].category || '教養';
+            if (currentCredits[cat] !== undefined) {
+                currentCredits[cat] += credits;
+            }
+            currentCredits['合計'] += credits;
         }
     }
     
-    const creditsView = document.getElementById('total-credits-view');
-    if (creditsView) {
-        creditsView.innerText = `🔥 登録単位数: ${totalCredits} 単位`;
+    // ② 歴代（全学期）の総集計
+    for (let sem in timetableData) {
+        for (let key in timetableData[sem]) {
+            if (timetableData[sem][key] && timetableData[sem][key].credits) {
+                lifetimeCredits += Number(timetableData[sem][key].credits);
+            }
+        }
     }
     
+    // 🆕 画面上の集計バッジ（テキスト）を書き換える
+    if(document.getElementById('credits-req')) document.getElementById('credits-req').innerText = currentCredits['必修'];
+    if(document.getElementById('credits-maj')) document.getElementById('credits-maj').innerText = currentCredits['専門'];
+    if(document.getElementById('credits-gen')) document.getElementById('credits-gen').innerText = currentCredits['教養'];
+    if(document.getElementById('credits-current-total')) document.getElementById('credits-current-total').innerText = currentCredits['合計'];
+    if(document.getElementById('credits-lifetime')) document.getElementById('credits-lifetime').innerText = lifetimeCredits;
+    
+    // テーブルの再描画
     document.querySelectorAll('td[data-day]').forEach(td => {
         const day = td.getAttribute('data-day');
         const period = td.parentElement.getAttribute('data-period');
         const key = day + '-' + period;
-        
         const course = semesterData[key];
         
         if (course) {
             const totalAbs = course.absence + (course.lateness / 3);
             const rem = 5 - totalAbs;
             const remText = Number(rem.toFixed(2));
-            
             const alertMsg = rem < 0 ? "落単 乙w" : rem === 0 ? "絶対に学校に行け！！" : "あと " + remText + " 回欠席できます";
             const isDanger = rem <= 1;
             
