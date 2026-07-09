@@ -20,6 +20,9 @@
                 <label style="font-size: 12px; font-weight: bold; color: #4b5563; margin-right: 6px;">表示中の時間割:</label>
                 <select id="semester-select" class="semester-select" onchange="handleSemesterChange(this.value)">
                     </select>
+                <span id="total-credits-view" style="margin-left: 15px; font-size: 13px; font-weight: bold; color: #1e3a8a; background: #dbeafe; padding: 6px 12px; border-radius: 20px; display: inline-block; vertical-align: middle;">
+                    🔥 登録単位数: 0 単位
+                </span>
             </div>
             <button class="btn-secondary" onclick="openAddSemesterModal()">＋ 新しい学期を追加</button>
         </div>
@@ -63,6 +66,10 @@
             <div class="form-group">
                 <label>授業名</label>
                 <input type="text" id="course-name-input" required placeholder="例: 経済学基礎">
+            </div>
+            <div class="form-group">
+                <label>単位数</label>
+                <input type="number" id="course-credits-input" min="0" max="10" value="2" required style="width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box;">
             </div>
             <div class="form-group">
                 <label>科目区分</label>
@@ -131,9 +138,10 @@
 </div>
 
 <script>
+// 初期データに credits（単位数）を追加
 let timetableData = {
     '2026年度 前期': {
-        '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室' }
+        '月-1': { name: '英語A', category: '必修', absence: 1, lateness: 0, memo: 'LL教室', credits: 2 }
     }
 };
 let currentSemester = '2026年度 前期';
@@ -219,218 +227,4 @@ function renderCalendar() {
     const month = currentCalendarDate.getMonth();
     document.getElementById('calendar-month-year').innerText = year + '年 ' + (month + 1) + '月';
     const firstDayIndex = new Date(year, month, 1).getDay();
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const grid = document.getElementById('calendar-grid');
-    let html = '';
-    
-    ['日', '月', '火', '水', '木', '金', '土'].forEach(d => html += '<div class="calendar-cell header">' + d + '</div>');
-    
-    for (let x = 0; x < firstDayIndex; x++) html += '<div class="calendar-cell other-month"></div>';
-    
-    const today = new Date();
-    for (let i = 1; i <= lastDay; i++) {
-        const dateKey = year + '-' + (month + 1) + '-' + i;
-        const isToday = i === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-        const tasks = tasksData[dateKey] || [];
-        
-        let taskHtml = '<div class="task-list">';
-        tasks.forEach(t => {
-            let prefix = t.type === 'test' ? '⚠️ ' : (t.type === 'task' ? '📝 ' : '📌 ');
-            taskHtml += '<div class="task-badge ' + t.type + '">' + prefix + t.text + '</div>';
-        });
-        taskHtml += '</div>';
-
-        html += `
-            <div class="calendar-cell" onclick="openTaskModal(${year}, ${month+1}, ${i})">
-                <div class="date-num ${isToday ? 'today' : ''}">${i}</div>
-                ${taskHtml}
-                <div class="add-task-hint">＋ 編集</div>
-            </div>`;
-    }
-    grid.innerHTML = html;
-}
-
-window.openTaskModal = function(y, m, d) {
-    activeTaskDate = y + '-' + m + '-' + d;
-    document.getElementById('task-modal-title').innerText = m + '月' + d + '日の予定';
-    renderTaskList();
-    document.getElementById('task-modal').style.display = 'flex';
-};
-
-function renderTaskList() {
-    const tasks = tasksData[activeTaskDate] || [];
-    const container = document.getElementById('existing-tasks');
-    if (tasks.length === 0) {
-        container.innerHTML = '<p style="font-size: 12px; color: #9ca3af; text-align: center;">予定はありません</p>';
-    } else {
-        let html = '';
-        const typeLabels = { 'task': '課題', 'test': 'テスト', 'other': 'その他' };
-        const classMap = { 'task': 'major', 'test': 'required', 'other': 'general' };
-        
-        tasks.forEach((task, index) => {
-            let memoDiv = '';
-            if (task.memo) {
-                memoDiv = '<div style="font-size: 11px; color: #6b7280; margin-top: 2px; padding-left: 6px; border-left: 2px solid #d1d5db; word-break: break-all;">' + task.memo + '</div>';
-            }
-            
-            html += `
-                <div class="task-entry" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
-                    <div style="flex: 1; text-align: left;">
-                        <span class="badge ${classMap[task.type]}" style="margin-left:0; margin-right:4px;">${typeLabels[task.type]}</span>
-                        <span style="font-weight: bold;">${task.text}</span>
-                        ${memoDiv}
-                    </div>
-                    <button class="btn-done" onclick="deleteTask(${index})" style="margin-left: 8px;">完了</button>
-                </div>`;
-        });
-        container.innerHTML = html;
-    }
-}
-
-window.handleAddTask = function(type) {
-    const input = document.getElementById('task-input-' + type);
-    const memoInput = document.getElementById('task-memo-' + type);
-    const value = input.value.trim();
-    const memoValue = memoInput ? memoInput.value.trim() : '';
-    if (!value) return;
-
-    if (!tasksData[activeTaskDate]) tasksData[activeTaskDate] = [];
-    tasksData[activeTaskDate].push({ text: value, type: type, memo: memoValue });
-    
-    input.value = '';
-    if (memoInput) memoInput.value = '';
-    renderTaskList();
-    renderCalendar();
-};
-
-window.deleteTask = function(index) {
-    tasksData[activeTaskDate].splice(index, 1);
-    if (tasksData[activeTaskDate].length === 0) delete tasksData[activeTaskDate];
-    renderTaskList();
-    renderCalendar();
-};
-
-// --- 時間割処理・共通処理 ---
-window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
-
-function updateSliderLabel(value) {
-    const cat = categories[value];
-    const labelSpan = document.getElementById('category-val');
-    if (labelSpan) {
-        labelSpan.innerText = cat;
-        labelSpan.className = 'badge ' + categoryClasses[cat];
-    }
-}
-
-function renderTimetable() {
-    updateSemesterSelect();
-    
-    document.querySelectorAll('td[data-day]').forEach(td => {
-        const day = td.getAttribute('data-day');
-        const period = td.parentElement.getAttribute('data-period');
-        const key = day + '-' + period;
-        
-        const semesterData = timetableData[currentSemester] || {};
-        const course = semesterData[key];
-        
-        if (course) {
-            const totalAbs = course.absence + (course.lateness / 3);
-            
-            // 💡 ここで残り回数を計算（マイナスも許容するため、Math.maxは外してあります）
-            const rem = 5 - totalAbs;
-            const remText = Number(rem.toFixed(2));
-            
-            // 🛠 修正されたアラート文言の条件分岐（= を === に修正）
-            const alertMsg = rem < 0 ? "落単 乙w" : rem === 0 ? "絶対に学校に行け！！" : "あと " + remText + " 回欠席できます";
-            const isDanger = rem <= 1;
-            
-            let memoHtml = '';
-            if (course.memo) {
-                memoHtml = '<div class="course-room" style="font-size: 10px; color: #4b5563; background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 3px; display: inline-block; margin-top: 4px; font-weight: 500; word-break: break-all;">🚪 ' + course.memo + '</div>';
-            }
-
-            td.innerHTML = `
-                <div class="course-card ${categoryClasses[course.category]}">
-                    <div onclick="openModal('${day}', ${period})">
-                        <span class="category-badge">${course.category}</span>
-                        <div class="course-name">${course.name}</div>
-                        ${memoHtml}
-                    </div>
-                    <div class="absence-zone" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px;">
-                        <div style="display: flex; justify-content: space-between;"><span>欠席: <b>${course.absence}</b>回</span>
-                            <div class="btn-zone"><button onclick="changeCount('${key}','absence',-1)">-</button><button onclick="changeCount('${key}','absence',1)">+</button></div></div>
-                        <div style="display: flex; justify-content: space-between;"><span>遅刻: <b>${course.lateness}</b>回</span>
-                            <div class="btn-zone"><button onclick="changeCount('${key}','lateness',-1)">-</button><button onclick="changeCount('${key}','lateness',1)">+</button></div></div>
-                        <div style="font-size: 9px; font-weight: bold; color: ${isDanger?'#dc2626':'inherit'}; text-align: center; padding-top: 2px;">${alertMsg}</div>
-                    </div>
-                </div>`;
-        } else {
-            td.innerHTML = '<button class="btn-add" onclick="openModal(\'' + day + '\', ' + period + ')">+ 追加</button>';
-        }
-    });
-}
-
-window.changeCount = function(key, type, amt) {
-    if (timetableData[currentSemester] && timetableData[currentSemester][key]) { 
-        timetableData[currentSemester][key][type] = Math.max(0, (timetableData[currentSemester][key][type] || 0) + amt); 
-        renderTimetable(); 
-    }
-};
-
-window.openModal = function(day, period) {
-    activeTargetKey = day + '-' + period;
-    document.getElementById('modal-title').innerText = day + '曜日 ' + period + '限の授業設定';
-    
-    const existing = timetableData[currentSemester] ? timetableData[currentSemester][activeTargetKey] : null;
-    const deleteBtn = document.getElementById('btn-delete');
-    
-    if (existing) {
-        document.getElementById('course-name-input').value = existing.name;
-        document.getElementById('course-memo-input').value = existing.memo || '';
-        const catIndex = categories.indexOf(existing.category);
-        document.getElementById('category-slider').value = catIndex;
-        updateSliderLabel(catIndex);
-        deleteBtn.style.display = 'block';
-    } else {
-        document.getElementById('course-name-input').value = '';
-        document.getElementById('course-memo-input').value = '';
-        document.getElementById('category-slider').value = 0;
-        updateSliderLabel(0);
-        deleteBtn.style.display = 'none';
-    }
-    document.getElementById('modal').style.display = 'flex';
-};
-
-document.getElementById('course-form').onsubmit = function(e) {
-    e.preventDefault();
-    if (!timetableData[currentSemester]) timetableData[currentSemester] = {};
-    
-    const existing = timetableData[currentSemester][activeTargetKey];
-    timetableData[currentSemester][activeTargetKey] = {
-        name: document.getElementById('course-name-input').value,
-        category: categories[document.getElementById('category-slider').value],
-        absence: existing ? existing.absence : 0,
-        lateness: existing ? existing.lateness : 0,
-        memo: document.getElementById('course-memo-input').value
-    };
-    closeModal('modal');
-    renderTimetable();
-};
-
-document.getElementById('btn-delete').onclick = function() { 
-    if (timetableData[currentSemester]) {
-        delete timetableData[currentSemester][activeTargetKey]; 
-    }
-    closeModal('modal'); 
-    renderTimetable(); 
-};
-
-window.onload = function() {
-    document.getElementById('category-slider').addEventListener('input', (e) => {
-        updateSliderLabel(e.target.value);
-    });
-    renderTimetable();
-};
-</script>
-</body>
-</html>
+    const lastDay = new Date(year, month + 1, 0).
